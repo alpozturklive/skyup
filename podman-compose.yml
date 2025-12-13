@@ -1,143 +1,107 @@
-version: '3.9'
+version: '3.8'
 
 services:
-
-  ollama:
-    image: ollama/ollama:latest
-    container_name: ollama
-    restart: unless-stopped
-    ports:
-      - "11434:11434"
-    volumes:
-      - /root/.ollama:/root/.ollama:Z
-    environment:
-      - OLLAMA_MAX_LOADED_MODELS=1
-      - OLLAMA_NUM_PARALLEL=1
-      - OLLAMA_KEEP_ALIVE=5m
-    mem_limit: 1200M
-    cpus: 0.4
-
-  ollama-ui:
-    image: ghcr.io/ollama-webui/ollama-webui:latest
-    container_name: ollama-ui
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:8080:8080"
-    env_file:
-      - .env
-    volumes:
-      - /root/.podman/appbackenddata:/app/backend/data:Z
-    environment:
-      - OLLAMA_BASE_URL=http://ollama:11434
-      - WEBUI_AUTH=True                # ✔ login page enabled
-      - WEBUI_SIGNUP_ENABLED=False     # ⛔ disable signup
-      - WEBUI_RESET_PASSWORD=False     # ⛔ disable password reset
-      - WEBUI_TELEMETRY_ENABLED=False  # ⛔ disable telemetry
-      - WEBUI_GUEST_MODE=False         # ⛔ disable guest mode
-      # --- ADMIN ACCOUNT (required if signup is disabled) ---
-      - WEBUI_ADMIN_EMAIL=${WEBUI_ADMIN_EMAIL}
-      - WEBUI_ADMIN_PASSWORD=${WEBUI_ADMIN_PASSWORD}
-    depends_on:
-      - ollama
-
+  # ====================== Postgres ======================
   postgres:
-    image: pgvector/pgvector:pg17 
-    container_name: postgres
-    restart: always
-    ports:
-      - "127.0.0.1:5432:5432"
-    env_file:
-      - .env
+    image: pgvector/pgvector:pg17
+    container_name: pgvector
+    restart: unless-stopped
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_ROOT_PASS}
-      N8N_DB_PASS: ${N8N_DB_PASS}
-      SIM_DB_PASS: ${SIM_DB_PASS}
     volumes:
-      - /root/.podman/varlibpostgresql:/var/lib/postgresql/data:Z
-      - ./init-dbs.sh:/docker-entrypoint-initdb.d/init-dbs.sh:ro
+      - .podman/pgvector-varlibpostgresqldata:/var/lib/postgresql/data:Z
+      - ./init-dbs.sh:/docker-entrypoint-initdb.d/init-dbs.sh:Z
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 5
 
-  n8n:
-    image: docker.io/n8nio/n8n:latest
-    container_name: n8n
-    restart: always
-    ports:
-      - "127.0.0.1:5678:5678"
-    env_file:
-      - .env
-    environment:
-      N8N_HOST: n8n.skyup.online
-      WEBHOOK_URL: https://n8n.skyup.online/
-      N8N_PROTOCOL: https
-      DB_TYPE: postgresdb
-      DB_POSTGRESDB_HOST: postgres
-      DB_POSTGRESDB_DATABASE: n8n
-      DB_POSTGRESDB_USER: n8n
-      DB_POSTGRESDB_PASSWORD: ${N8N_DB_PASS}
-      N8N_BASIC_AUTH_ACTIVE: true
-      N8N_BASIC_AUTH_USER: ${N8N_BASIC_AUTH_USER}
-      N8N_BASIC_AUTH_PASSWORD: ${N8N_BASIC_AUTH_PASS}
-      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY}
-    volumes:
-      - /root/.podman/n8nhomenode:/home/node/.n8n:Z 
-    depends_on:
-      postgres:
-        condition: service_healthy
-
-
-  migrations:
-    image: ghcr.io/simstudioai/simstudio:latest
-    container_name: sim-migrations
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      DATABASE_URL: postgresql://sim:${SIM_DB_PASS}@postgres:5432/sim?sslmode=disable
-    command: npx prisma migrate deploy
-
+  # ====================== SimStudio Ana App ======================
   sim:
     image: ghcr.io/simstudioai/simstudio:latest
-    container_name: sim
+    container_name: simstudio
     restart: unless-stopped
     ports:
-      - "127.0.0.1:3001:3000"
+      - "127.0.0.1:3000:3000"
     env_file:
       - .env
     environment:
       NODE_ENV: production
       NEXT_PUBLIC_APP_URL: https://sim.skyup.online
       NEXTAUTH_URL: https://sim.skyup.online
-      DATABASE_URL: postgresql://sim:${SIM_DB_PASS}@postgres:5432/sim?sslmode=disable
-      RUN_MIGRATIONS: "true"
-      SIM_JWT_SECRET: ${SIM_JWT_SECRET}
-      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
-      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
-      NEXT_PUBLIC_APP_URL: https://sim.skyup.online
+      BETTER_AUTH_URL: https://sim.skyup.online
+      DATABASE_URL: postgresql://sim:${SIM_DB_PASS}@pgvector:5432/simstudio?sslmode=disable
     volumes:
-      - /root/.podman/simappdata:/app/data:Z
+      - .podman/simstudio-appdata:/app/data:Z
     depends_on:
       postgres:
         condition: service_healthy
-      migrations:
-        condition: service_completed_successfully
 
+  # ====================== SimStudio Realtime ======================
   realtime:
     image: ghcr.io/simstudioai/realtime:latest
-    container_name: sim-realtime
+    container_name: realtime
     restart: unless-stopped
     ports:
-      - "127.0.0.1:3002:3000"
+      - "127.0.0.1:3001:3000"
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgresql://sim:${SIM_DB_PASS}@postgres:5432/sim?sslmode=disable
-      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+      DATABASE_URL: postgresql://sim:${SIM_DB_PASS}@pgvector:5432/simstudio?sslmode=disable
       NEXT_PUBLIC_APP_URL: https://sim.skyup.online
-      # If you later add Ollama, you can set OLLAMA_URL here
+    volumes:
+      - .podman/realtime-appdata:/app/data:Z
     depends_on:
       postgres:
         condition: service_healthy
+
+  # ====================== n8n ======================
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5678:5678"
+    env_file:
+      - .env
+    environment:
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: pgvector
+      DB_POSTGRESDB_DATABASE: n8n
+      DB_POSTGRESDB_USER: n8n
+      DB_POSTGRESDB_PASSWORD: ${N8N_DB_PASS}
+      N8N_BASIC_AUTH_ACTIVE: true
+      N8N_BASIC_AUTH_USER: ${N8N_BASIC_AUTH_USER}
+      N8N_BASIC_AUTH_PASS: ${N8N_BASIC_AUTH_PASS}
+      N8N_HOST: n8n.skyup.online
+      N8N_PROTOCOL: https
+      WEBHOOK_URL: https://n8n.skyup.online/
+    volumes:
+      - .podman/n8n-homenode.n8n:/home/node/.n8n:Z
+
+  # ====================== Ollama Web UI ======================
+  webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080"
+    env_file:
+      - .env
+    environment:
+      OLLAMA_API_BASE_URL: http://ollama:11434
+      WEBUI_SECRET_KEY: ${BETTER_AUTH_SECRET}
+    volumes:
+      - .podman/open-webui-appbackenddata:/app/backend/data:Z
+    depends_on:
+      - ollama
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:11434:11434"
+    volumes:
+      - .podman/ollama-models:/root/.ollama:Z

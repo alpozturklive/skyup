@@ -1,97 +1,136 @@
 ```markdown
 # SkyUp – Kişisel Self-Hosted Uygulama Sunucusu
 
-Bu repo, **skyup.online** domaini altında çeşitli açık kaynak uygulamaları güvenli bir şekilde host etmek için kullanılan sunucu konfigürasyonlarını içerir.
+Bu repo, **skyup.online** domaini altında güçlü açık kaynak araçları güvenli bir şekilde host etmek için hazırlanmış tam bir konfigürasyon setidir.
 
 ## Host Edilen Uygulamalar
 
-- **skyup.online** → Ollama Web UI (Open WebUI veya benzeri) – localhost:8080
-- **n8n.skyup.online** → n8n (Workflow Automation Tool) – localhost:5678
-- **sim.skyup.online** → Özel Next.js uygulaması (Ana app: localhost:3001 + Socket.IO: localhost:3002)
+- **skyup.online** → Ollama Web UI (Open WebUI) – Güçlü LLM modellerini tarayıcıdan yönetin (localhost:8080)
+- **n8n.skyup.online** → n8n – Görsel workflow automation aracı (localhost:5678)
+- **sim.skyup.online** → SimStudio AI – AI agent workflow builder (Next.js tabanlı, ana app: 3000, realtime/socket: 3001)
 
-Tüm trafikler Nginx reverse proxy üzerinden yönetilir, HTTPS (Let's Encrypt wildcard sertifika) zorunlu kılınır ve WebSocket desteği tamdır.
+Tüm trafiği Nginx reverse proxy yönetir, Let's Encrypt wildcard SSL ile HTTPS zorunlu kılınır ve WebSocket desteği tamdır.
 
 ## Kullanılan Teknolojiler
 
+- **Podman + podman-compose** – Rootless container orchestration
 - **Nginx** – Reverse proxy ve HTTPS termination
-- **Podman** – Container orchestration (podman-compose ile)
-- **Certbot** – Let's Encrypt SSL sertifikaları (wildcard *.skyup.online)
+- **PostgreSQL with pgvector** – SimStudio ve n8n için ayrı veritabanları
+- **Let's Encrypt** – Wildcard SSL (*.skyup.online)
 
-## Kurulum Adımları (Detaylı Komutlar)
+## Kurulum ve Kullanım Adımları
 
-1. **Gerekli Paketleri Yükle** (CentOS/RHEL/Fedora tabanlı sistemler için):
+1. **Gerekli Paketleri Yükle** (CentOS/RHEL/Fedora için):
    ```bash
    dnf update -y
-   dnf install nginx podman podman-compose certbot python3-certbot-nginx -y
+   dnf install podman podman-compose nginx certbot python3-certbot-nginx -y
    ```
 
-2. **Certbot ile Wildcard SSL Sertifikası Al**  
-   (Wildcard için DNS-01 doğrulaması gerekir – DNS sağlayıcında TXT kaydı eklemen gerekecek):
+2. **Repo'yu Klonla ve Dizine Gir** (proje /root içinde olacak):
    ```bash
-   certbot certonly --manual --preferred-challenges dns \
-     -d "*.skyup.online" -d "skyup.online"
+   cd /root
+   git clone https://github.com/alpozturklive/skyup.git .
+   # veya mevcut repo'yu güncelle: git pull
    ```
-   - Certbot talimatları takip et, TXT kaydını ekle ve doğrula.
-   - Sertifikalar `/etc/letsencrypt/live/skyup.online/` yoluna kaydedilir.
 
-3. **Nginx Konfigürasyonunu Uygula**
+3. **Gizli Klasörü Oluştur** (tüm kalıcı veriler burada tutulur):
    ```bash
-   # Repo'daki nginx.conf dosyasını sunucuya kopyala
-   cp nginx.conf /etc/nginx/nginx.conf   # veya conf.d/ altına skyup.conf olarak
+   mkdir -p .podman/{pgvector-varlibpostgresqldata,simstudio-appdata,realtime-appdata,n8n-homenode.n8n,open-webui-appbackenddata,ollama-models}
+   ```
 
-   # Konfigürasyonu test et
-   nginx -t
+4. **Güvenli .env Dosyasını Oluştur** (tüm şifreler otomatik üretilir, =+/ karakterleri içermez):
+   ```bash
+   chmod +x init-env.sh
+   ./init-env.sh
+   ```
 
-   # Eğer test başarılıysa Nginx'i reload et
+5. **Container'ları Başlat**:
+   ```bash
+   chmod +x init-dbs.sh
+   podman-compose up -d
+   ```
+
+   - İlk başlatmada `init-dbs.sh` otomatik çalışır ve ayrı veritabanlarını (`simstudio` ve `n8n`) oluşturur.
+
+6. **Nginx Konfigürasyonunu Uygula**:
+   ```bash
+   cp nginx.conf /etc/nginx/nginx.conf   # veya /etc/nginx/conf.d/skyup.conf olarak
+   nginx -t                              # konfigürasyonu test et
    systemctl reload nginx
-   # veya
-   nginx -s reload
-   ```
-
-   Ayrıca Nginx servisini başlat ve aktif et:
-   ```bash
    systemctl enable --now nginx
    ```
 
-4. **Podman ile Container'ları Başlat**  
-   (podman-compose.yaml repo'da mevcutsa):
+7. **SSL Sertifikası Al** (Wildcard için DNS-01 önerilir):
    ```bash
-   # Repo klasörüne git
-   cd /path/to/skyup/repo
-
-   # Container'ları arka planda başlat
-   podman-compose up -d
-
-   # Container durumlarını kontrol et
-   podman ps -a
-
-   # Logları izle (örnek: n8n container'ı)
-   podman logs -f <container_name_or_id>
+   certbot certonly --manual --preferred-challenges dns -d "*.skyup.online" -d skyup.online
    ```
+   - DNS sağlayıcında TXT kaydı ekle, sertifikalar `/etc/letsencrypt/live/skyup.online/` altına kaydedilir.
 
-5. **DNS Ayarları**
-   - Tüm subdomain'ler (`*.skyup.online` ve `skyup.online`) sunucu public IP'sine A kaydı ile yönlendirilmeli.
+8. **DNS Ayarları**
+   - `skyup.online` ve `*.skyup.online` A kayıtlarını sunucu public IP'sine yönlendir.
 
-## Dosyalar
+## Kullanım ve Giriş
 
-- `nginx.conf` → Ana reverse proxy konfigürasyonu (HTTPS, WebSocket desteği, timeout'lar vb.)
-- `podman-compose.yaml` → Container tanımları ve orchestration
-- `.gitignore` → Güvenlik amacıyla tüm nokta ile başlayan dosyaları (dotfiles) yok sayar  
-  **Özellik**:  
-  - Nokta ile başlayan tüm dosyalar (örneğin `.env`, `.private`, gizli konfigürasyonlar) otomatik olarak Git'e eklenmez ve GitHub'a yüklenmez.  
-  - Tek istisna: `.gitignore` dosyasının kendisi takip edilir.
+- **SimStudio** (https://sim.skyup.online)
+  - Sign up linkine tıkla → Email ve şifre ile yeni hesap oluştur.
+  - İlk hesap admin olur.
+  - AI agent workflow'ları visual olarak tasarlayabilirsin.
+
+- **n8n** (https://n8n.skyup.online)
+  - Basic Auth ile giriş: Kullanıcı `admin`, şifre `./init-env.sh` çalıştırıldığında üretilen (`cat .env | grep N8N_BASIC_AUTH_PASS`)
+  - Workflow'lar oluştur, API'leri bağla.
+
+- **Ollama WebUI** (https://skyup.online)
+  - Email: `admin@local`
+  - Şifre: `./init-env.sh` ile üretilen (`cat .env | grep WEBUI_ADMIN_PASSWORD`)
+  - Modelleri indir, chat yap, API kullan.
+
+## Günlük Kullanım Komutları
+
+- Container'ları durdur/başlat:
+  ```bash
+  podman-compose down
+  podman-compose up -d
+  ```
+
+- Logları izle:
+  ```bash
+  podman logs -f simstudio
+  podman logs -f n8n
+  podman logs -f open-webui
+  ```
+
+- Yeni şifreler üret (.env yenile):
+  ```bash
+  ./init-env.sh
+  podman-compose restart
+  ```
+
+- Backup al:
+  ```bash
+  tar -czf skyup-backup-$(date +%F).tar.gz .podman/ .env podman-compose.yaml nginx.conf init-*.sh
+  ```
 
 ## Güvenlik Notları
 
-- Tüm HTTP trafiği HTTPS'e yönlendirilir.
-- WebSocket'ler için özel header'lar tanımlı.
-- Sertifika yolları `/etc/letsencrypt/live/skyup.online/` olarak ayarlı.
-- `.gitignore` sayesinde hassas dosyalar asla public repo'ya düşmez.
-- Ek güvenlik header'ları (HSTS, CSP vb.) eklemek isterseniz nginx.conf'a `add_header` satırları ekleyin.
+- `.env` ve `.podman/` klasörü `.gitignore` ile korunur, asla GitHub'a yüklenmez.
+- Tüm şifreler rastgele ve güçlüdür.
+- Kayıt kapatma (`DISABLE_REGISTRATION=true`) ile sadece ilk kullanıcı giriş yapabilir.
+- Firewall'da sadece 80/443 açık olmalı.
 
-## Katkı
+Her türlü öneri, hata bildirimi veya katkı hoş geldiniz! 🚀
 
-Her türlü öneri, hata bildirimi veya pull request hoş geldiniz! 🚀
-
-Teşekkürler!
+Teşekkürler – Alparslan Öztürk
 ```
+
+Bu README.md dosyasını doğrudan repo köküne (`/root/README.md`) koyabilirsin:
+
+```bash
+nano README.md
+# yukarıdaki içeriği yapıştır, kaydet
+git add README.md
+git commit -m "Add detailed README with usage instructions"
+git push origin main
+```
+
+Artık repo'n hem profesyonel görünecek hem de başka biri (veya gelecekteki sen) kolayca kurup kullanabilecek. İyi eğlenceler! 🚀
