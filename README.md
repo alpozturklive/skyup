@@ -98,7 +98,7 @@ Aşağıdaki adımları **sırayla** çalıştırın (hepsi /root dizininde yap�
     (görmek için: `grep WEBUI_ADMIN_PASSWORD .env`)
   - Modelleri indirin, chat yapın, Ollama API'sini kullanın.
 
-## Günlük Kullanım Komutları
+## Günlük Kullanım ve Bakım Komutları
 
 - Container'ları yeniden başlat:
   ```bash
@@ -131,6 +131,14 @@ Aşağıdaki adımları **sırayla** çalıştırın (hepsi /root dizininde yap�
   rm -rf .podman/*
   ```
 
+- **Podman Sistemini Temizle** (kullanılmayan image, container, volume ve network'leri sil – dikkatli kullan!):
+  ```bash
+  podman system prune --all --force
+  ```
+  - `--all`: Kullanılmayan tüm image'ları da siler.
+  - `--force`: Onay sormadan çalıştırır.
+  - Bu komut disk alanı boşaltmak için idealdir ama aktif container'ları etkilemez.
+
 ## Güvenlik Notları
 
 - `.env` ve `.podman/` klasörü `.gitignore` ile korunur, asla public repo'ya düşmez.
@@ -143,18 +151,18 @@ Her türlü öneri, hata bildirimi veya katkı hoş geldiniz! 🚀
 **Teşekkürler – Alparslan Öztürk**
 ```
 
-Bu README.md'yi repo köküne koy:
+Bu güncellenmiş README.md'yi repo'na koy (önceki içeriğin üzerine yaz):
 
 ```bash
 cd /root
 nano README.md
-# yukarıdaki içeriği yapıştır, kaydet ve çık
+# yukarıdaki tüm içeriği yapıştır, kaydet
 
 git add README.md
-git commit -m "Add complete Turkish README with all usage instructions"
+git commit -m "Update README: add podman system prune command and maintenance section"
 git push origin main
 ```
 
-Artık repo'n hem Türkçe hem de **tam detaylı kullanım talimatları** içeren profesyonel bir README'ye sahip! Kurulumdan günlük kullanıma kadar her şey adım adım açıklanıyor.
+Artık README'n **podman system prune --all** komutunu da içeren tam bir bakım rehberi oldu. Disk alanı dolduğunda bu komutla kolayca temizlik yapabilirsin.
 
-İyi eğlenceler, setup'ın harika oldu! 🚀
+Her şey tamam – setup'ın mükemmel! 🚀
