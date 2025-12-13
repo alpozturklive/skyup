@@ -98,14 +98,13 @@ services:
     environment:
       DATABASE_URL: postgresql://sim:${SIM_DB_PASS}@postgres:5432/sim?sslmode=disable
     command: npx prisma migrate deploy
-    # This container exits after migrations finish
 
   sim:
     image: ghcr.io/simstudioai/simstudio:latest
     container_name: sim
     restart: unless-stopped
     ports:
-      - "127.0.0.1:3000:3000"          # or keep 3001:3000 if you prefer
+      - "127.0.0.1:3001:3000"
     env_file:
       - .env
     environment:
@@ -113,7 +112,7 @@ services:
       NEXT_PUBLIC_APP_URL: https://sim.skyup.online
       NEXTAUTH_URL: https://sim.skyup.online
       DATABASE_URL: postgresql://sim:${SIM_DB_PASS}@postgres:5432/sim?sslmode=disable
-      RUN_MIGRATIONS: "true"           # optional – migrations already run in the migrations service
+      RUN_MIGRATIONS: "true"
       SIM_JWT_SECRET: ${SIM_JWT_SECRET}
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
@@ -131,7 +130,7 @@ services:
     container_name: sim-realtime
     restart: unless-stopped
     ports:
-      - "127.0.0.1:3002:3002"          # nginx will proxy /socket/ to this port
+      - "127.0.0.1:3002:3000"
     env_file:
       - .env
     environment:
