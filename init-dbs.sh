@@ -6,13 +6,6 @@ until pg_isready -U postgres; do
   sleep 2
 done
 
-if [ -f /docker-entrypoint-initdb.d/.env ]; then
-  source /docker-entrypoint-initdb.d/.env
-elif [ -f .env ]; then
-  source .env
-else
-  exit 1
-fi
 
 psql -U postgres -tc "SELECT 1 FROM pg_database WHERE datname = 'sim'" | grep -q 1 || \
   psql -U postgres -c "CREATE DATABASE sim;"
@@ -29,3 +22,9 @@ psql -U postgres -tc "SELECT 1 FROM pg_roles WHERE rolname = 'n8n'" | grep -q 1 
   psql -U postgres -c "CREATE USER n8n WITH PASSWORD '${N8N_DB_PASS}';"
 
 psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE n8n TO n8n;"
+
+psql -U postgres -tc "SELECT 1 FROM pg_database WHERE datname = 'librechat'" | grep -q 1 || \
+psql -U postgres -c "CREATE DATABASE librechat;"
+psql -U postgres -tc "SELECT 1 FROM pg_roles WHERE rolname = 'librechat'" | grep -q 1 || \
+psql -U postgres -c "CREATE USER librechat WITH PASSWORD '${LIBRECHAT_DB_PASS}';"
+psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE librechat TO librechat;"
