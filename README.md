@@ -1,144 +1,241 @@
-This comprehensive `README.md` is designed to guide users through setting up, deploying, and maintaining your secure, self-hosted AI and workflow automation stack on GitHub. It includes all necessary setup steps, including directory creation, permission setting, and service management commands.
+Understood 👍
+Below are the **FINAL versions of the files** you asked for, **clean, minimal, and ready to use**.
+The **README.md is intentionally short** (no excessive details).
 
-```markdown
-# SkyUp – Personal Self-Hosted Application Server
+I’m giving you **only the essential files**.
 
-This repository contains the complete configuration stack for securely hosting powerful open-source tools under the **skyup.online** domain. The setup leverages **Podman** for rootless containerization and **Nginx** for reverse proxy management, enforcing HTTPS using Let's Encrypt wildcard SSL and ensuring full WebSocket support,.
+---
 
-## Hosted Applications
+# ✅ `podman-compose.yml` (FINAL)
 
-| Domain | Service | Function | Internal Port |
-| :--- | :--- | :--- | :--- |
-| `skyup.online` | Ollama Web UI (LibreChat) | Manage LLM models and chat interface,. | 3080 |
-| `n8n.skyup.online` | n8n | Visual workflow automation tool. | 5678 |
-| `sim.skyup.online` | SimStudio AI | AI agent workflow builder (Next.js based). | 3000 / 3001 |
+```yaml
+version: "3.9"
 
-## Key Technologies Used
+services:
 
-*   **Podman + podman-compose:** Used for rootless container orchestration.
-*   **Nginx:** Functions as the reverse proxy and handles HTTPS termination.
-*   **PostgreSQL with pgvector:** Used to host **separate** databases for SimStudio and n8n,.
-*   **init-env.sh:** Script to generate strong, randomized secrets for all passwords and keys.
+  mongodb:
+    image: mongo:7
+    container_name: mongodb
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_DB}
+    command: ["mongod", "--auth"]
+    ports:
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - .podman/mongodb-datadb:/data/db
 
-## Full Installation and Usage Steps
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: postgres
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - .podman/pgvector-varlibpostgresqldata:/var/lib/postgresql/data
+      - ./initdb:/docker-entrypoint-initdb.d
 
-Run the following steps **in order** (assuming execution from the project root directory).
+  librechat:
+    image: ghcr.io/danny-avila/librechat:latest
+    container_name: librechat
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      MONGO_URI: mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@mongodb:27017/${MONGO_DB}?authSource=admin
+      OLLAMA_BASE_URL: http://ollama:11434
+    volumes:
+      - .podman/librechat-appclientpublicconfig:/app/client/public/config
+    depends_on:
+      - mongodb
 
-### 1. Install Required Packages
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:11434:11434"
+    volumes:
+      - .ollama:/root/.ollama
 
-The following command provides an example for CentOS/RHEL/Fedora systems to install Podman, `podman-compose`, Nginx, and Certbot:
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: postgres
+      DB_POSTGRESDB_DATABASE: ${N8N_DB}
+      DB_POSTGRESDB_USER: ${N8N_DB_USER}
+      DB_POSTGRESDB_PASSWORD: ${N8N_DB_PASSWORD}
+      N8N_BASIC_AUTH_ACTIVE: "true"
+      N8N_BASIC_AUTH_USER: ${N8N_BASIC_USER}
+      N8N_BASIC_AUTH_PASSWORD: ${N8N_BASIC_PASSWORD}
+    volumes:
+      - .podman/n8n-homenode.n8n:/home/node/.n8n
+    depends_on:
+      - postgres
 
-```bash
-dnf update -y
-dnf install podman podman-compose nginx certbot python3-certbot-nginx -y
+  simstudio:
+    image: alpozturklive/simstudio:latest
+    container_name: simstudio
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${SIM_DB_USER}:${SIM_DB_PASSWORD}@postgres:5432/${SIM_DB}
+    volumes:
+      - .podman/sim-appdata:/app/data
+    depends_on:
+      - postgres
+
+  realtime:
+    image: alpozturklive/realtime:latest
+    container_name: realtime
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - .podman/realtime-appdata:/app/data
 ```
 
-### 2. Create Persistent Data Directories
+---
 
-This step creates the necessary persistent volume folders (`.podman/`) where all container data will be stored on the host machine.
+# ✅ `init-env.sh` (FINAL)
 
 ```bash
-rm -rf .podman/
+#!/usr/bin/env bash
+set -e
 
-podman system prune --all
+gen_pass() {
+  openssl rand -base64 32
+}
 
-mkdir -p .podman/{pgvector-varlibpostgresqldata,simstudio-appdata,realtime-appdata,n8n-homenode.n8n,ollama-models,librechat-config}
+cat > .env <<EOF
+# PostgreSQL
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=$(gen_pass)
+POSTGRES_DB=main
+
+# SimStudio
+SIM_DB=sim
+SIM_DB_USER=sim_user
+SIM_DB_PASSWORD=$(gen_pass)
+
+# n8n
+N8N_DB=n8n
+N8N_DB_USER=n8n_user
+N8N_DB_PASSWORD=$(gen_pass)
+N8N_BASIC_USER=admin
+N8N_BASIC_PASSWORD=$(gen_pass)
+
+# MongoDB
+MONGO_ROOT_USER=mongo
+MONGO_ROOT_PASSWORD=$(gen_pass)
+MONGO_DB=librechat
+
+# LibreChat admin
+LIBRECHAT_ADMIN_EMAIL=admin@local
+LIBRECHAT_ADMIN_PASSWORD=$(gen_pass)
+EOF
+
+chmod 600 .env
+echo "✔ .env generated"
 ```
 
-### 3. Generate Secure Environment File (`.env`)
+---
 
-The `init-env.sh` script generates a comprehensive set of randomized, strong passwords and secrets (e.g., `POSTGRES_ROOT_PASS`, `SIM_JWT_SECRET`, `N8N_BASIC_AUTH_PASS`) and saves them to the `.env` file,.
+# ✅ `initdb/01-postgres-init.sql` (FINAL)
 
+```sql
+CREATE DATABASE sim;
+CREATE DATABASE n8n;
+
+CREATE USER sim_user WITH PASSWORD :'SIM_DB_PASSWORD';
+CREATE USER n8n_user WITH PASSWORD :'N8N_DB_PASSWORD';
+
+GRANT ALL PRIVILEGES ON DATABASE sim TO sim_user;
+GRANT ALL PRIVILEGES ON DATABASE n8n TO n8n_user;
+
+\connect sim
+CREATE EXTENSION IF NOT EXISTS vector;
+
+\connect n8n
+CREATE EXTENSION IF NOT EXISTS vector;
+```
+
+---
+
+# ✅ `.env.example` (FORMAT ONLY)
+
+```env
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=
+POSTGRES_DB=main
+
+SIM_DB=sim
+SIM_DB_USER=sim_user
+SIM_DB_PASSWORD=
+
+N8N_DB=n8n
+N8N_DB_USER=n8n_user
+N8N_DB_PASSWORD=
+N8N_BASIC_USER=admin
+N8N_BASIC_PASSWORD=
+
+MONGO_ROOT_USER=mongo
+MONGO_ROOT_PASSWORD=
+MONGO_DB=librechat
+
+LIBRECHAT_ADMIN_EMAIL=admin@local
+LIBRECHAT_ADMIN_PASSWORD=
+```
+
+---
+
+# ✅ `README.md` (SHORT & CLEAN)
+
+````md
+# SkyUp
+
+Self-hosted AI and automation stack using Podman Compose.
+
+## Services
+- LibreChat
+- Ollama
+- MongoDB
+- PostgreSQL + pgvector
+- n8n
+- SimStudio
+- Realtime
+
+## Setup
 ```bash
-chmod +x init-env.sh
 ./init-env.sh
-```
-
-### 4. Prepare Database Initialization Script
-
-Ensure the script that sets up the isolated `sim` and `n8n` databases and users has execution permissions,,.
-
-```bash
-chmod +x init-dbs.sh
-```
-
-### 5. Start Container Stack (`podman-compose up`)
-
-This command starts all services (ollama, librechat, pgvector, n8n, simstudio, realtime) defined in the `podman-compose.yaml`-. The `init-dbs.sh` script runs automatically inside the `pgvector` container on first startup,.
-
-```bash
+mkdir -p .podman/mongodb-datadb .podman/librechat-appclientpublicconfig .podman/pgvector-varlibpostgresqldata .podman/n8n-homenode.n8n .podman/sim-appdata .podman/realtime-appdata .ollama
 podman-compose up -d
-```
+````
 
-### 6. Configure and Start Nginx Service
-
-This deploys the `nginx.conf` file, which handles HTTPS enforcement (listening on port 80 and 443) and proxies traffic to the correct internal container ports (3080, 5678, 3000, 3001) based on the subdomain,,.
-
-```bash
-cp nginx.conf /etc/nginx/nginx.conf
-nginx -t # Test the configuration for syntax errors
-systemctl reload nginx
-systemctl enable --now nginx
-```
-
-***
-
-## Maintenance and Utility Commands
-
-### Container Management (Start, Stop, Restart)
-
-To stop and then restart the entire stack:
+## Reset
 
 ```bash
 podman-compose down
-podman-compose up -d
-```
-
-To stop all services:
-
-```bash
-podman-compose stop
-```
-
-### Monitoring Logs
-
-View the real-time output from a specific service:
-
-```bash
-podman logs -f simstudio
-podman logs -f n8n
-podman logs -f pgvector
-```
-
-### System Cleanup (Prune)
-
-Use this command to **remove unused images, containers, volumes, and networks** to free up disk space.
-
-```bash
+rm -rf .podman/*
 podman system prune --all --force
 ```
 
-*   `--all`: Removes all unused images (not just dangling ones).
-*   `--force`: Executes without prompting for confirmation.
-
-### Backup
-
-Create a compressed backup archive containing all persistent data, compose file, scripts, and the `.env` configuration:
-
-```bash
-tar -czf skyup-backup-$(date +%F).tar.gz .podman/ .env podman-compose.yaml nginx.conf init-env.sh init-dbs.sh
 ```
 
-***
-
-## Initial Access Credentials
-
-*Note: All passwords and secrets are automatically generated by `init-env.sh` and stored in your `.env` file.*
-
-| Application | URL | Default Username/Email | Password Source (in `.env`) |
-| :--- | :--- | :--- | :--- |
-| **SimStudio** | `https://sim.skyup.online` | N/A | **Registration is disabled** (`DISABLE_REGISTRATION=true`),. |
-| **n8n** | `https://n8n.skyup.online` | `admin` | `N8N_BASIC_AUTH_PASS`,. |
-| **Ollama Web UI** | `https://skyup.online` | `admin@local` | `WEBUI_ADMIN_PASSWORD`,.
-
-To quickly view a specific password, use the `grep` command (e.g., `grep N8N_BASIC_AUTH_PASS .env`),.
+---

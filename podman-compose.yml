@@ -1,18 +1,52 @@
-version: '3.8'
+version: "3.9"
 
 services:
 
   mongodb:
-    image: mongo:latest
+    image: mongo:7
     container_name: mongodb
     restart: unless-stopped
-    ports:
-      - "127.0.0.1:27017:27017"
     env_file:
       - .env
-    volumes:
-      - .podman/mongodb-db:/data/db:Z
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_DB}
     command: ["mongod", "--auth"]
+    ports:
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - .podman/mongodb-datadb:/data/db
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: postgres
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - .podman/pgvector-varlibpostgresqldata:/var/lib/postgresql/data
+      - ./initdb:/docker-entrypoint-initdb.d
+
+  librechat:
+    image: ghcr.io/danny-avila/librechat:latest
+    container_name: librechat
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      MONGO_URI: mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@mongodb:27017/${MONGO_DB}?authSource=admin
+      OLLAMA_BASE_URL: http://ollama:11434
+    volumes:
+      - .podman/librechat-appclientpublicconfig:/app/client/public/config
+    depends_on:
+      - mongodb
 
   ollama:
     image: ollama/ollama:latest
@@ -21,79 +55,46 @@ services:
     ports:
       - "127.0.0.1:11434:11434"
     volumes:
-      - .ollama:/root/.ollama:Z
-
-  librechat:
-    image: ghcr.io/danny-avila/librechat:latest
-    container_name: librechat
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:3080:3080"
-    volumes:
-      - .podman/librechat-config:/app/client/public/config:Z
-    env_file:
-      - .env
-    depends_on:
-      - ollama
-      - mongodb
-
-  postgres:
-    image: pgvector/pgvector:pg17
-    container_name: pgvector
-    restart: unless-stopped
-    environment:
-      POSTGRES_PASSWORD: ${POSTGRES_ROOT_PASS}
-    env_file:
-      - .env
-    volumes:
-      - .podman/pgvector-data:/var/lib/postgresql/data:Z
-      - ./init-dbs.sh:/docker-entrypoint-initdb.d/init-dbs.sh:Z
-    ports:
-      - "127.0.0.1:5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - .ollama:/root/.ollama
 
   n8n:
     image: n8nio/n8n:latest
     container_name: n8n
     restart: unless-stopped
-    ports:
-      - "127.0.0.1:5678:5678"
     env_file:
       - .env
+    environment:
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: postgres
+      DB_POSTGRESDB_DATABASE: ${N8N_DB}
+      DB_POSTGRESDB_USER: ${N8N_DB_USER}
+      DB_POSTGRESDB_PASSWORD: ${N8N_DB_PASSWORD}
+      N8N_BASIC_AUTH_ACTIVE: "true"
+      N8N_BASIC_AUTH_USER: ${N8N_BASIC_USER}
+      N8N_BASIC_AUTH_PASSWORD: ${N8N_BASIC_PASSWORD}
     volumes:
-      - .podman/n8n-homenode.n8n:/home/node/.n8n:Z
+      - .podman/n8n-homenode.n8n:/home/node/.n8n
     depends_on:
-      postgres:
-        condition: service_healthy
+      - postgres
 
-  sim:
-    image: ghcr.io/simstudioai/simstudio:latest
-    container_name: sim
+  simstudio:
+    image: alpozturklive/simstudio:latest
+    container_name: simstudio
     restart: unless-stopped
-    ports:
-      - "127.0.0.1:3000:3000"
     env_file:
       - .env
+    environment:
+      DATABASE_URL: postgresql://${SIM_DB_USER}:${SIM_DB_PASSWORD}@postgres:5432/${SIM_DB}
     volumes:
-      - .podman/sim-data:/app/data:Z
+      - .podman/sim-appdata:/app/data
     depends_on:
-      postgres:
-        condition: service_healthy
+      - postgres
 
   realtime:
-    image: ghcr.io/simstudioai/realtime:latest
+    image: alpozturklive/realtime:latest
     container_name: realtime
     restart: unless-stopped
-    ports:
-      - "127.0.0.1:3001:3000"
     env_file:
       - .env
     volumes:
-      - .podman/realtime-data:/app/data:Z
-    depends_on:
-      postgres:
-        condition: service_healthy
+      - .podman/realtime-appdata:/app/data

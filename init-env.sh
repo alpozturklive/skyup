@@ -1,96 +1,37 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -e
 
-set -euo pipefail
-
-generate_secret() {
-local length=$1
-openssl rand -base64 $((length * 4 / 3 + 4)) | tr -d "=+/" | head -c $length
+gen_pass() {
+  openssl rand -base64 32
 }
 
-##############################################
-# 1. GENERATE DATABASE & AUTHENTICATION SECRETS
-##############################################
-
-# --- PostgreSQL Secrets ---
-POSTGRES_ROOT_PASS=$(generate_secret 32)
-
-# --- MongoDB Secrets ---
-MONGO_ROOT_USER="mongo" 
-MONGO_ROOT_PASS=$(generate_secret 32)
-MONGO_INITDB_DATABASE="librechat"
-MONGODB_URI=mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASS}@mongodb:27017/${MONGO_INITDB_DATABASE}?authSource=admin
-
-# --- Application Secrets ---
-N8N_BASIC_AUTH_PASS=$(generate_secret 24)
-
-
-##############################################
-# 2. APPLICATION & SERVICE CONFIGURATION VARIABLES
-##############################################
-
-# --- LibreChat Configuration ---
-OLLAMA_API_BASE_URL=http://ollama:11434
-HOST=0.0.0.0
-PORT=3080
-
-# --- N8N Variables ---
-DB_TYPE=postgresdb
-DB_POSTGRESDB_HOST=pgvector
-DB_POSTGRESDB_DATABASE=n8n
-DB_POSTGRESDB_USER=n8n_user
-DB_POSTGRESDB_PASSWORD=n8npass
-N8N_BASIC_AUTH_USER=admin
-N8N_BASIC_AUTH_ACTIVE=true
-N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
-N8N_RUNNERS_ENABLED=true
-N8N_BLOCK_ENV_ACCESS_IN_NODE=true
-N8N_GIT_NODE_DISABLE_BARE_REPOS=true
-
-# --- SimStudio/Realtime Variables ---
-SIM_DATABASE_URL=postgresql://sim_user:simpass@pgvector:5432/sim?sslmode=disable
-NEXT_PUBLIC_APP_URL=https://sim.skyup.online
-BETTER_AUTH_URL=https://sim.skyup.online
-NEXTAUTH_URL=https://sim.skyup.online
-DISABLE_REGISTRATION=true
-OTEL_SDK_DISABLED=true
-
-
-##############################################
-# 3. CREATE .ENV FILE
-##############################################
-
 cat > .env <<EOF
-# --- PostgreSQL Credentials ---
-POSTGRES_ROOT_PASS=${POSTGRES_ROOT_PASS}
+# PostgreSQL
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=$(gen_pass)
+POSTGRES_DB=main
 
-# --- MongoDB/LibreChat Connection ---
-MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USER}
-MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASS}
-MONGO_INITDB_DATABASE=${MONGO_INITDB_DATABASE}
-MONGODB_URI=${MONGODB_URI}
-OLLAMA_API_BASE_URL=${OLLAMA_API_BASE_URL}
-HOST=${HOST}
-PORT=${PORT}
+# SimStudio
+SIM_DB=sim
+SIM_DB_USER=sim_user
+SIM_DB_PASSWORD=$(gen_pass)
 
-# --- N8N Configuration ---
-DB_TYPE=${DB_TYPE}
-DB_POSTGRESDB_HOST=${DB_POSTGRESDB_HOST}
-DB_POSTGRESDB_DATABASE=${DB_POSTGRESDB_DATABASE}
-DB_POSTGRESDB_USER=${DB_POSTGRESDB_USER}
-DB_POSTGRESDB_PASSWORD=${DB_POSTGRESDB_PASSWORD}
-N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER}
-N8N_BASIC_AUTH_PASS=${N8N_BASIC_AUTH_PASS}
-N8N_BASIC_AUTH_ACTIVE=${N8N_BASIC_AUTH_ACTIVE}
-N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=${N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS}
-N8N_RUNNERS_ENABLED=${N8N_RUNNERS_ENABLED}
-N8N_BLOCK_ENV_ACCESS_IN_NODE=${N8N_BLOCK_ENV_ACCESS_IN_NODE}
-N8N_GIT_NODE_DISABLE_BARE_REPOS=${N8N_GIT_NODE_DISABLE_BARE_REPOS}
+# n8n
+N8N_DB=n8n
+N8N_DB_USER=n8n_user
+N8N_DB_PASSWORD=$(gen_pass)
+N8N_BASIC_USER=admin
+N8N_BASIC_PASSWORD=$(gen_pass)
 
-# --- SimStudio AI Configuration ---
-DATABASE_URL=${SIM_DATABASE_URL}
-NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
-BETTER_AUTH_URL=${BETTER_AUTH_URL}
-NEXTAUTH_URL=${NEXTAUTH_URL}
-DISABLE_REGISTRATION=${DISABLE_REGISTRATION}
-OTEL_SDK_DISABLED=${OTEL_SDK_DISABLED}
+# MongoDB
+MONGO_ROOT_USER=mongo
+MONGO_ROOT_PASSWORD=$(gen_pass)
+MONGO_DB=librechat
+
+# LibreChat admin
+LIBRECHAT_ADMIN_EMAIL=admin@local
+LIBRECHAT_ADMIN_PASSWORD=$(gen_pass)
 EOF
+
+chmod 600 .env
+echo "✔ .env generated"
