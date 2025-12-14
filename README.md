@@ -1,168 +1,140 @@
+This comprehensive `README.md` is designed to guide users through setting up, deploying, and maintaining your secure, self-hosted AI and workflow automation stack on GitHub. It includes all necessary setup steps, including directory creation, permission setting, and service management commands.
+
 ```markdown
-# SkyUp – Kişisel Self-Hosted Uygulama Sunucusu
+# SkyUp – Personal Self-Hosted Application Server
 
-Bu repo, **skyup.online** domaini altında güçlü açık kaynak araçları güvenli bir şekilde host etmek için hazırlanmış tam bir konfigürasyon setidir.
+This repository contains the complete configuration stack for securely hosting powerful open-source tools under the **skyup.online** domain. The setup leverages **Podman** for rootless containerization and **Nginx** for reverse proxy management, enforcing HTTPS using Let's Encrypt wildcard SSL and ensuring full WebSocket support,.
 
-## Host Edilen Uygulamalar
+## Hosted Applications
 
-- **skyup.online** → Ollama Web UI (Open WebUI) – Güçlü LLM modellerini tarayıcıdan yönetin
-- **n8n.skyup.online** → n8n – Görsel workflow automation aracı
-- **sim.skyup.online** → SimStudio AI – AI agent workflow builder (Next.js tabanlı)
+| Domain | Service | Function | Internal Port |
+| :--- | :--- | :--- | :--- |
+| `skyup.online` | Ollama Web UI (LibreChat) | Manage LLM models and chat interface,. | 3080 |
+| `n8n.skyup.online` | n8n | Visual workflow automation tool. | 5678 |
+| `sim.skyup.online` | SimStudio AI | AI agent workflow builder (Next.js based). | 3000 / 3001 |
 
-Tüm trafiği Nginx reverse proxy yönetir, Let's Encrypt wildcard SSL ile HTTPS zorunlu kılınır ve WebSocket desteği tamdır.
+## Key Technologies Used
 
-## Kullanılan Teknolojiler
+*   **Podman + podman-compose:** Used for rootless container orchestration.
+*   **Nginx:** Functions as the reverse proxy and handles HTTPS termination.
+*   **PostgreSQL with pgvector:** Used to host **separate** databases for SimStudio and n8n,.
+*   **init-env.sh:** Script to generate strong, randomized secrets for all passwords and keys.
 
-- **Podman + podman-compose** – Rootless container orchestration
-- **Nginx** – Reverse proxy ve HTTPS termination
-- **PostgreSQL with pgvector** – SimStudio ve n8n için **ayrı** veritabanları
-- **Let's Encrypt** – Wildcard SSL (*.skyup.online)
+## Full Installation and Usage Steps
 
-## Tam Kurulum ve Kullanım Adımları
+Run the following steps **in order** (assuming execution from the project root directory).
 
-Aşağıdaki adımları **sırayla** çalıştırın (hepsi /root dizininde yapılır).
+### 1. Install Required Packages
 
-1. **Gerekli Paketleri Yükle** (CentOS/RHEL/Fedora için):
-   ```bash
-   dnf update -y
-   dnf install podman podman-compose nginx certbot python3-certbot-nginx -y
-   ```
-
-2. **Repo'yu Hazırla** (eğer daha önce klonlamadıysan):
-   ```bash
-   cd /root
-   git clone https://github.com/alpozturklive/skyup.git .
-   # veya mevcut repo'yu güncelle:
-   git pull
-   ```
-
-3. **Kalıcı Veri Klasörlerini Oluştur** (tüm veriler burada tutulur):
-   ```bash
-   mkdir -p .podman/{pgvector-varlibpostgresqldata,simstudio-appdata,realtime-appdata,n8n-homenode.n8n,open-webui-appbackenddata,ollama-models}
-   ```
-
-4. **Güvenli .env Dosyasını Oluştur** (tüm şifreler otomatik ve güçlü üretilir):
-   ```bash
-   chmod +x init-env.sh
-   ./init-env.sh
-   ```
-   - `.env` dosyası repo kökünde oluşur ve `.gitignore` ile korunur (GitHub'a yüklenmez).
-
-5. **Veritabanı Init Script'ini Hazırla**:
-   ```bash
-   chmod +x init-dbs.sh
-   ```
-
-6. **Container'ları Başlat**:
-   ```bash
-   podman-compose up -d
-   ```
-   - İlk başlatmada `init-dbs.sh` otomatik çalışır ve şu veritabanlarını oluşturur:
-     - `simstudio` (SimStudio için, user: sim)
-     - `n8n` (n8n için, user: n8n)
-
-7. **Nginx Konfigürasyonunu Uygula**:
-   ```bash
-   cp nginx.conf /etc/nginx/nginx.conf   # veya /etc/nginx/conf.d/skyup.conf olarak
-   nginx -t                              # konfigürasyonu test et
-   systemctl reload nginx
-   systemctl enable --now nginx
-   ```
-
-8. **SSL Sertifikası Al** (Wildcard için DNS-01 önerilir):
-   ```bash
-   certbot certonly --manual --preferred-challenges dns -d "*.skyup.online" -d skyup.online
-   ```
-   - DNS sağlayıcında TXT kaydı ekle, sertifikalar `/etc/letsencrypt/live/skyup.online/` altına kaydedilir.
-
-9. **DNS Ayarları**
-   - `skyup.online` ve `*.skyup.online` A kayıtlarını sunucu public IP'sine yönlendir.
-
-## Uygulamalara Giriş ve Kullanım
-
-- **SimStudio** (https://sim.skyup.online)
-  - "Sign up" linkine tıklayın → Email ve şifre ile yeni hesap oluşturun.
-  - İlk hesap otomatik admin olur.
-  - AI agent'ları visual olarak tasarlayın.
-
-- **n8n** (https://n8n.skyup.online)
-  - Basic Auth ile giriş yapın:
-    - Kullanıcı: `admin`
-    - Şifre: `.env` dosyasında `N8N_BASIC_AUTH_PASS` satırındaki değer  
-      (görmek için: `grep N8N_BASIC_AUTH_PASS .env`)
-  - Workflow'lar oluşturun, entegrasyonlar ekleyin.
-
-- **Ollama WebUI** (https://skyup.online)
-  - Email: `admin@local`
-  - Şifre: `.env` dosyasında `WEBUI_ADMIN_PASSWORD` satırındaki değer  
-    (görmek için: `grep WEBUI_ADMIN_PASSWORD .env`)
-  - Modelleri indirin, chat yapın, Ollama API'sini kullanın.
-
-## Günlük Kullanım ve Bakım Komutları
-
-- Container'ları yeniden başlat:
-  ```bash
-  podman-compose down
-  podman-compose up -d
-  ```
-
-- Logları izle:
-  ```bash
-  podman logs -f simstudio
-  podman logs -f n8n
-  podman logs -f open-webui
-  podman logs -f pgvector
-  ```
-
-- Yeni şifreler üret ve hizmetleri yenile:
-  ```bash
-  ./init-env.sh
-  podman-compose restart
-  ```
-
-- Backup al (tüm veriler + konfigürasyon):
-  ```bash
-  tar -czf skyup-backup-$(date +%F).tar.gz .podman/ .env podman-compose.yaml nginx.conf init-env.sh init-dbs.sh
-  ```
-
-- Verileri tamamen temizle (sıfırdan başlamak için):
-  ```bash
-  podman-compose down
-  rm -rf .podman/*
-  ```
-
-- **Podman Sistemini Temizle** (kullanılmayan image, container, volume ve network'leri sil – dikkatli kullan!):
-  ```bash
-  podman system prune --all --force
-  ```
-  - `--all`: Kullanılmayan tüm image'ları da siler.
-  - `--force`: Onay sormadan çalıştırır.
-  - Bu komut disk alanı boşaltmak için idealdir ama aktif container'ları etkilemez.
-
-## Güvenlik Notları
-
-- `.env` ve `.podman/` klasörü `.gitignore` ile korunur, asla public repo'ya düşmez.
-- Tüm şifreler rastgele ve güçlüdür (=+/ karakterleri içermez).
-- `DISABLE_REGISTRATION=true` ile SimStudio'da yeni kayıt kapatılmıştır.
-- Firewall'da sadece 80 ve 443 portları açık olmalı.
-
-Her türlü öneri, hata bildirimi veya katkı hoş geldiniz! 🚀
-
-**Teşekkürler – Alparslan Öztürk**
-```
-
-Bu güncellenmiş README.md'yi repo'na koy (önceki içeriğin üzerine yaz):
+The following command provides an example for CentOS/RHEL/Fedora systems to install Podman, `podman-compose`, Nginx, and Certbot:
 
 ```bash
-cd /root
-nano README.md
-# yukarıdaki tüm içeriği yapıştır, kaydet
-
-git add README.md
-git commit -m "Update README: add podman system prune command and maintenance section"
-git push origin main
+dnf update -y
+dnf install podman podman-compose nginx certbot python3-certbot-nginx -y
 ```
 
-Artık README'n **podman system prune --all** komutunu da içeren tam bir bakım rehberi oldu. Disk alanı dolduğunda bu komutla kolayca temizlik yapabilirsin.
+### 2. Create Persistent Data Directories
 
-Her şey tamam – setup'ın mükemmel! 🚀
+This step creates the necessary persistent volume folders (`.podman/`) where all container data will be stored on the host machine.
+
+```bash
+mkdir -p .podman/{pgvector-varlibpostgresqldata,simstudio-appdata,realtime-appdata,n8n-homenode.n8n,ollama-models,librechat-config}
+```
+
+### 3. Generate Secure Environment File (`.env`)
+
+The `init-env.sh` script generates a comprehensive set of randomized, strong passwords and secrets (e.g., `POSTGRES_ROOT_PASS`, `SIM_JWT_SECRET`, `N8N_BASIC_AUTH_PASS`) and saves them to the `.env` file,.
+
+```bash
+chmod +x init-env.sh
+./init-env.sh
+```
+
+### 4. Prepare Database Initialization Script
+
+Ensure the script that sets up the isolated `sim` and `n8n` databases and users has execution permissions,,.
+
+```bash
+chmod +x init-dbs.sh
+```
+
+### 5. Start Container Stack (`podman-compose up`)
+
+This command starts all services (ollama, librechat, pgvector, n8n, simstudio, realtime) defined in the `podman-compose.yaml`-. The `init-dbs.sh` script runs automatically inside the `pgvector` container on first startup,.
+
+```bash
+podman-compose up -d
+```
+
+### 6. Configure and Start Nginx Service
+
+This deploys the `nginx.conf` file, which handles HTTPS enforcement (listening on port 80 and 443) and proxies traffic to the correct internal container ports (3080, 5678, 3000, 3001) based on the subdomain,,.
+
+```bash
+cp nginx.conf /etc/nginx/nginx.conf
+nginx -t # Test the configuration for syntax errors
+systemctl reload nginx
+systemctl enable --now nginx
+```
+
+***
+
+## Maintenance and Utility Commands
+
+### Container Management (Start, Stop, Restart)
+
+To stop and then restart the entire stack:
+
+```bash
+podman-compose down
+podman-compose up -d
+```
+
+To stop all services:
+
+```bash
+podman-compose stop
+```
+
+### Monitoring Logs
+
+View the real-time output from a specific service:
+
+```bash
+podman logs -f simstudio
+podman logs -f n8n
+podman logs -f pgvector
+```
+
+### System Cleanup (Prune)
+
+Use this command to **remove unused images, containers, volumes, and networks** to free up disk space.
+
+```bash
+podman system prune --all --force
+```
+
+*   `--all`: Removes all unused images (not just dangling ones).
+*   `--force`: Executes without prompting for confirmation.
+
+### Backup
+
+Create a compressed backup archive containing all persistent data, compose file, scripts, and the `.env` configuration:
+
+```bash
+tar -czf skyup-backup-$(date +%F).tar.gz .podman/ .env podman-compose.yaml nginx.conf init-env.sh init-dbs.sh
+```
+
+***
+
+## Initial Access Credentials
+
+*Note: All passwords and secrets are automatically generated by `init-env.sh` and stored in your `.env` file.*
+
+| Application | URL | Default Username/Email | Password Source (in `.env`) |
+| :--- | :--- | :--- | :--- |
+| **SimStudio** | `https://sim.skyup.online` | N/A | **Registration is disabled** (`DISABLE_REGISTRATION=true`),. |
+| **n8n** | `https://n8n.skyup.online` | `admin` | `N8N_BASIC_AUTH_PASS`,. |
+| **Ollama Web UI** | `https://skyup.online` | `admin@local` | `WEBUI_ADMIN_PASSWORD`,.
+
+To quickly view a specific password, use the `grep` command (e.g., `grep N8N_BASIC_AUTH_PASS .env`),.
