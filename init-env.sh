@@ -2,7 +2,7 @@
 set -e
 
 gen_pass() {
-  openssl rand -base64 32
+  openssl rand -base64 48 | tr -d "=+/" | head -c 32
 }
 
 cat > .env <<EOF
