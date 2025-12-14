@@ -1,4 +1,4 @@
-version: '3.8'
+
 
 services:
   # ====================== Postgres ======================
@@ -6,6 +6,10 @@ services:
     image: pgvector/pgvector:pg17
     container_name: pgvector
     restart: unless-stopped
+    ports:
+      - "127.0.0.1:5432:5432"
+    env_file:
+      - .env
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_ROOT_PASS}
     volumes:
@@ -17,7 +21,7 @@ services:
       timeout: 5s
       retries: 5
 
-  # ====================== SimStudio Ana App ======================
+  # ====================== SimStudio App ======================
   sim:
     image: ghcr.io/simstudioai/simstudio:latest
     container_name: simstudio
@@ -80,23 +84,7 @@ services:
     volumes:
       - .podman/n8n-homenode.n8n:/home/node/.n8n:Z
 
-  # ====================== Ollama Web UI ======================
-  webui:
-    image: ghcr.io/open-webui/open-webui:main
-    container_name: open-webui
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:8080:8080"
-    env_file:
-      - .env
-    environment:
-      OLLAMA_API_BASE_URL: http://ollama:11434
-      WEBUI_SECRET_KEY: ${BETTER_AUTH_SECRET}
-    volumes:
-      - .podman/open-webui-appbackenddata:/app/backend/data:Z
-    depends_on:
-      - ollama
-
+  # ====================== Ollama & LibreChat ======================
   ollama:
     image: ollama/ollama:latest
     container_name: ollama
@@ -104,4 +92,18 @@ services:
     ports:
       - "127.0.0.1:11434:11434"
     volumes:
-      - .podman/ollama-models:/root/.ollama:Z
+      - .podman/ollama-models:/root/.ollama:Z  
+
+  librechat:
+    image: ghcr.io/danny-avila/librechat:latest
+    container_name: librechat
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3080:3080"
+    volumes:
+      - .podman/librechat-appclientpublicconfig:/app/client/public/config:Z
+    environment:
+      OLLAMA_API_BASE_URL: http://ollama:11434
+      depends_on:
+        - ollama
+
