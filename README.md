@@ -28,6 +28,12 @@ rm -rf .podman
 podman system prune --all --force
 ```
 
+## Soft Reset
+```bash
+rm -rf .podman/*
+./init-env.sh 
+
+```
 
 
 ---

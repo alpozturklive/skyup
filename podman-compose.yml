@@ -38,10 +38,13 @@ services:
     image: ghcr.io/danny-avila/librechat:latest
     container_name: librechat
     restart: unless-stopped
+    ports:
+      - "127.0.0.1:3080:3080"
     env_file:
       - .env
     environment:
       MONGO_URI: mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@mongodb:27017/${MONGO_DB}?authSource=admin
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       OLLAMA_BASE_URL: http://ollama:11434
     volumes:
       - .podman/librechat-appclientpublicconfig:/app/client/public/config
@@ -61,6 +64,8 @@ services:
     image: n8nio/n8n:latest
     container_name: n8n
     restart: unless-stopped
+    ports:
+      - "127.0.0.1:5678:5678"
     env_file:
       - .env
     environment:
@@ -78,7 +83,7 @@ services:
       - postgres
 
   simstudio:
-    image: alpozturklive/simstudio:latest
+    image: ghcr.io/simstudioai/simstudio:latest
     container_name: simstudio
     restart: unless-stopped
     env_file:
@@ -91,10 +96,16 @@ services:
       - postgres
 
   realtime:
-    image: alpozturklive/realtime:latest
+    image: ghcr.io/simstudioai/realtime:latest
     container_name: realtime
     restart: unless-stopped
+    ports:
+      - "127.0.0.1:3001:3000"
     env_file:
       - .env
+    environment:
+      DATABASE_URL: postgresql://${SIM_DB_USER}:${SIM_DB_PASSWORD}@postgres:5432/${SIM_DB}
     volumes:
       - .podman/realtime-appdata:/app/data
+    depends_on:
+      - postgres

@@ -5,7 +5,14 @@ gen_pass() {
   openssl rand -base64 48 | tr -d "=+/" | head -c 32
 }
 
-cat > .env <<EOF
+ENV_FILE=".env"
+SQL_FILE="initdb/01-postgres-init.sql"
+
+#################################
+# Generate .env
+#################################
+
+cat > "$ENV_FILE" <<EOF
 # PostgreSQL
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=$(gen_pass)
@@ -33,5 +40,28 @@ LIBRECHAT_ADMIN_EMAIL=admin@local
 LIBRECHAT_ADMIN_PASSWORD=$(gen_pass)
 EOF
 
-chmod 600 .env
+chmod 600 "$ENV_FILE"
 echo "✔ .env generated"
+
+#################################
+# Inject passwords into SQL
+#################################
+
+if [ ! -f "$SQL_FILE" ]; then
+  echo "⚠ $SQL_FILE not found, skipping SQL injection"
+  exit 0
+fi
+
+# Load env vars
+export $(grep -v '^#' "$ENV_FILE" | xargs)
+
+# Validate required vars
+: "${N8N_DB_PASSWORD:?Missing N8N_DB_PASSWORD}"
+: "${SIM_DB_PASSWORD:?Missing SIM_DB_PASSWORD}"
+
+sed -i \
+  -e "s|__N8N_DB_PASSWORD__|${N8N_DB_PASSWORD}|g" \
+  -e "s|__SIM_DB_PASSWORD__|${SIM_DB_PASSWORD}|g" \
+  "$SQL_FILE"
+
+echo "✔ PostgreSQL init SQL updated"
