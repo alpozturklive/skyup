@@ -38,6 +38,10 @@ dnf install podman podman-compose nginx certbot python3-certbot-nginx -y
 This step creates the necessary persistent volume folders (`.podman/`) where all container data will be stored on the host machine.
 
 ```bash
+rm -rf .podman/
+
+podman system prune --all
+
 mkdir -p .podman/{pgvector-varlibpostgresqldata,simstudio-appdata,realtime-appdata,n8n-homenode.n8n,ollama-models,librechat-config}
 ```
 
