@@ -1,12 +1,1 @@
-
-.*
-*
-!.gitignore
-!initdb
-!initdb/01-postgres-init.sql
-!podman-compose.yaml
-!nginx.conf
-!init-dbs.sh
-!init-env.sh
-!README.md
-!LICENSE
+.env

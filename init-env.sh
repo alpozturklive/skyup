@@ -22,6 +22,7 @@ POSTGRES_DB=main
 SIM_DB=sim
 SIM_DB_USER=sim_user
 SIM_DB_PASSWORD=$(gen_pass)
+NEXT_PUBLIC_APP_URL=https://sim.skyup.online
 
 # n8n
 N8N_DB=n8n
@@ -36,8 +37,14 @@ MONGO_ROOT_PASSWORD=$(gen_pass)
 MONGO_DB=librechat
 
 # LibreChat admin
-LIBRECHAT_ADMIN_EMAIL=admin@local
-LIBRECHAT_ADMIN_PASSWORD=$(gen_pass)
+LIBRECHAT_ADMIN_EMAIL=admin@skyup.online
+LIBRECHAT_ADMIN_PASSWORD=Password123
+JWT_SECRET=$(gen_pass)
+JWT_REFRESH_SECRET=$(gen_pass)
+SESSION_SECRET=$(gen_pass)
+ALLOW_REGISTRATION=false
+ALLOW_SOCIAL_LOGIN=false
+OLLAMA_BASE_URL=http://ollama:11434
 EOF
 
 chmod 600 "$ENV_FILE"
