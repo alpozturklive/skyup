@@ -9,31 +9,22 @@ services:
     env_file:
       - .env
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
+      MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
-      MONGO_INITDB_DATABASE: ${MONGO_DB}
+      MONGO_INITDB_DATABASE: librechatdb
     command: ["mongod", "--auth"]
     ports:
       - "127.0.0.1:27017:27017"
     volumes:
       - .podman/mongodb-datadb:/data/db
-
-  postgres:
-    image: pgvector/pgvector:pg16
-    container_name: postgres
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
     restart: unless-stopped
-    env_file:
-      - .env
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:11434:11434"
     volumes:
-      - .podman/pgvector-varlibpostgresqldata:/var/lib/postgresql/data
-      - ./initdb:/docker-entrypoint-initdb.d
-
+      - .ollama:/root/.ollama
   librechat:
     image: ghcr.io/danny-avila/librechat:latest
     container_name: librechat
@@ -43,22 +34,32 @@ services:
     env_file:
       - .env
     environment:
-      MONGO_URI: mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@mongodb:27017/${MONGO_DB}?authSource=admin
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      MONGO_URI: mongodb://admin:${MONGO_ROOT_PASSWORD}@mongodb:27017/librechatdb?authSource=admin
+      OLLAMA_BASE_URL: http://ollama:11434
     volumes:
       - ./librechat.yaml:/app/librechat.yaml
       - .podman/librechat-appclientpublicconfig:/app/client/public/config
     depends_on:
       - mongodb
+      - ollama
 
-  ollama:
-    image: ollama/ollama:latest
-    container_name: ollama
+
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: postgres
     restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: postgres
     ports:
-      - "127.0.0.1:11434:11434"
+      - "127.0.0.1:5432:5432"
     volumes:
-      - .ollama:/root/.ollama
+      - .podman/pgvector-varlibpostgresqldata:/var/lib/postgresql/data
+      - ./initdb:/docker-entrypoint-initdb.d
 
   n8n:
     image: n8nio/n8n:latest
@@ -82,9 +83,9 @@ services:
     depends_on:
       - postgres
 
-  simstudio:
+  sim:
     image: ghcr.io/simstudioai/simstudio:latest
-    container_name: simstudio
+    container_name: sim
     restart: unless-stopped
     env_file:
       - .env
@@ -94,7 +95,6 @@ services:
       - .podman/sim-appdata:/app/data
     depends_on:
       - postgres
-
   realtime:
     image: ghcr.io/simstudioai/realtime:latest
     container_name: realtime
