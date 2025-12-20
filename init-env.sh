@@ -50,21 +50,3 @@ EOF
 
 chmod 600 .env
 echo "✔ .env generated"
-
-# -------------------------
-# Generate PostgreSQL init SQL
-# -------------------------
-cat > initdb/01-create-extra-dbs.sql <<EOF
--- n8n database and user
-CREATE DATABASE n8n;
-CREATE USER n8n_user WITH ENCRYPTED PASSWORD '${N8N_DB_PASSWORD}';
-GRANT ALL PRIVILEGES ON DATABASE n8n TO n8n_user;
-
--- sim database and user
-CREATE DATABASE sim;
-CREATE USER sim_user WITH ENCRYPTED PASSWORD '${SIM_DB_PASSWORD}';
-GRANT ALL PRIVILEGES ON DATABASE sim TO sim_user;
-EOF
-
-chmod 600 initdb/01-create-extra-dbs.sql
-echo "✔ PostgreSQL init SQL generated"

@@ -1,7 +1,8 @@
--- n8n
+-- n8n database and user
 CREATE USER n8n_user WITH ENCRYPTED PASSWORD :'N8N_DB_PASSWORD';
 CREATE DATABASE n8n OWNER n8n_user;
 
--- sim
+-- sim database and user
 CREATE USER sim_user WITH ENCRYPTED PASSWORD :'SIM_DB_PASSWORD';
 CREATE DATABASE sim OWNER sim_user;
+EOF
