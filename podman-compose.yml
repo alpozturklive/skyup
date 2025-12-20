@@ -6,13 +6,7 @@ services:
     image: mongo:7
     container_name: mongo
     restart: unless-stopped
-    env_file:
-      - .env
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
-      MONGO_INITDB_DATABASE: librechatdb
-    command: ["mongod", "--auth"]
+    command: ["mongod", "--bind_ip_all"]
     ports:
       - "127.0.0.1:27017:27017"
     volumes:
@@ -34,13 +28,12 @@ services:
     env_file:
       - .env
     environment:
-      MONGO_URI: mongodb://admin:${MONGO_ROOT_PASSWORD}@mongodb:27017/librechatdb?authSource=admin
+      MONGO_URI: mongodb://mongo:27017/librechat
       OLLAMA_BASE_URL: http://ollama:11434
     volumes:
-      - ./librechat.yaml:/app/librechat.yaml
       - .podman/librechat-appclientpublicconfig:/app/client/public/config
     depends_on:
-      - mongodb
+      - mongo
       - ollama
 
 

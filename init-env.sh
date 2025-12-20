@@ -17,7 +17,6 @@ SIM_DB_PASSWORD=$(gen_pass)
 # -------------------------
 cat > .env <<EOF
 # LibreChat
-MONGO_ROOT_PASSWORD=$(gen_pass)
 JWT_SECRET=$(gen_pass)
 JWT_REFRESH_SECRET=$(gen_pass)
 SESSION_SECRET=$(gen_pass)
