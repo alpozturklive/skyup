@@ -24,7 +24,7 @@ services:
     ports:
       - "127.0.0.1:11434:11434"
     volumes:
-      - .ollama:/root/.ollama
+      - /root/.ollama:/root/.ollama
   librechat:
     image: ghcr.io/danny-avila/librechat:latest
     container_name: librechat
