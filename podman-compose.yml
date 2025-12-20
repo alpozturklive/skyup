@@ -2,9 +2,9 @@ version: "3.9"
 
 services:
 
-  mongodb:
+  mongo:
     image: mongo:7
-    container_name: mongodb
+    container_name: mongo
     restart: unless-stopped
     env_file:
       - .env
@@ -16,7 +16,7 @@ services:
     ports:
       - "127.0.0.1:27017:27017"
     volumes:
-      - .podman/mongodb-datadb:/data/db
+      - .podman/mongo-datadb:/data/db
   ollama:
     image: ollama/ollama:latest
     container_name: ollama
