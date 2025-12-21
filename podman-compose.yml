@@ -28,7 +28,6 @@ services:
     env_file:
       - .env
     environment:
-      ALLOW_EMAIL_LOGIN=true
       MONGO_URI: mongodb://mongo:27017/librechat
       OLLAMA_BASE_URL: http://ollama:11434
     volumes:
