@@ -1,0 +1,15 @@
+#!/bin/bash
+set -e
+
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+    CREATE USER n8n_user WITH ENCRYPTED PASSWORD '${N8N_DB_PASSWORD}';
+    CREATE DATABASE n8n OWNER n8n_user;
+
+    CREATE USER sim_user WITH ENCRYPTED PASSWORD '${SIM_DB_PASSWORD}';
+    CREATE DATABASE sim OWNER sim_user;
+EOSQL
+
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "sim" <<-EOSQL
+    CREATE EXTENSION IF NOT EXISTS vector;
+    CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+EOSQL
