@@ -11,7 +11,7 @@ It is designed to be **simple, host‑only accessible**, and easy to extend late
 | Service | Purpose | Default Port |
 |------|--------|--------------|
 | PostgreSQL (pgvector) | Vector‑enabled database | 5432 |
-| LibreChat | AI chat interface | 3080 |
+| Open WebUI | AI chat interface | 8080 |
 | n8n | Workflow automation | 5678 |
 | SimStudio AI | AI agent workflows | 3000 / 3001 |
 | Nginx | Reverse proxy + HTTPS | 80 / 443 |
@@ -42,8 +42,7 @@ Ensure:
 ├── .env
 ├── init-env.sh
 ├── initdb/
-│   ├── 01-create-extra-dbs.sql
-│   └── 02-enable-extensions.sql
+│   └── 01-create-extra-dbs.sh
 ├── nginx.conf
 └── .podman/
 ```
@@ -52,31 +51,20 @@ Ensure:
 
 ## ⚙️ Setup Instructions
 
-### 1️⃣ Create required directories
-
-```bash
-mkdir -p .podman/pgvector-varlibpostgresqldata
-```
-
----
-
-### 2️⃣ Generate environment variables
+### 1️⃣ Generate environment variables and create directories
 
 ```bash
 chmod +x init-env.sh
 ./init-env.sh
 ```
 
-This generates:
-- Strong passwords
-- JWT secrets
-- Database credentials
-
-All secrets are stored in `.env`.
+This script performs two key functions:
+- **Creates required directories:** It removes any existing `.podman` directory and recreates the entire structure needed by the services.
+- **Generates secrets:** It creates strong passwords and credentials, storing them securely in the `.env` file.
 
 ---
 
-### 3️⃣ PostgreSQL initialization
+### 2️⃣ PostgreSQL initialization
 
 PostgreSQL uses the image:
 
@@ -84,22 +72,13 @@ PostgreSQL uses the image:
 pgvector/pgvector:pg16
 ```
 
-On first startup, SQL files inside `initdb/` are executed automatically:
+On first startup, the SQL script inside `initdb/` is executed automatically:
 
-- **01-create-extra-dbs.sql**
-  - Creates `n8n` and `sim` databases and users
-- **02-enable-extensions.sql**
-  - Enables extensions per database
-
-Enabled extensions:
-- `vector`
-- `uuid-ossp`
-- `pgcrypto`
-- `citext`
+- **01-create-extra-dbs.sh**: Creates databases and users for `n8n`, `sim`, and `open-webui`, and enables necessary extensions (`vector`, `uuid-ossp`) for each.
 
 ---
 
-### 4️⃣ Start services
+### 3️⃣ Start services
 
 ```bash
 podman-compose up -d
@@ -120,6 +99,7 @@ psql -h 127.0.0.1 -p 5432 -U postgres postgres
 ```bash
 psql -h 127.0.0.1 -U n8n_user n8n
 psql -h 127.0.0.1 -U sim_user sim
+psql -h 127.0.0.1 -U open_webui_user open_webui
 ```
 
 ### List databases
@@ -130,6 +110,7 @@ psql -h 127.0.0.1 -U sim_user sim
 
 ### List enabled extensions
 
+Connect to a database first, then run:
 ```bash
 \dx
 ```
@@ -140,7 +121,7 @@ psql -h 127.0.0.1 -U sim_user sim
 
 | Service | URL |
 |------|----|
-| LibreChat | https://skyup.online |
+| Open WebUI | https://skyup.online |
 | n8n | https://n8n.skyup.online |
 | SimStudio | https://sim.skyup.online |
 

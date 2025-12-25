@@ -2,22 +2,6 @@ version: "3.9"
 
 services:
 
-  # MongoDB for LibreChat
-  mongo:
-    image: mongo:7
-    container_name: mongo
-    restart: unless-stopped
-    command: ["mongod", "--bind_ip_all"]
-    ports:
-      - "127.0.0.1:27017:27017"
-    volumes:
-      - .podman/mongo-datadb:/data/db
-    healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   # Ollama for local LLM
   ollama:
     image: ollama/ollama:latest
@@ -25,44 +9,32 @@ services:
     restart: unless-stopped
     ports:
       - "127.0.0.1:11434:11434"
+    environment:
+      OLLAMA_VULKAN: 1
     volumes:
       - /root/.ollama:/root/.ollama
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
-  # LibreChat
-  librechat:
-    image: ghcr.io/danny-avila/librechat:latest
-    container_name: librechat
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
     restart: unless-stopped
     ports:
-      - "127.0.0.1:3080:3080"
+      - "127.0.0.1:8080:8080"
     env_file:
       - .env
     environment:
-      MONGO_URI: mongodb://mongo:27017/librechat
+      DATABASE_URL: postgresql://${OPEN_WEBUI_DB_USER}:${OPEN_WEBUI_DB_PASSWORD}@postgres:5432/${OPEN_WEBUI_DB}
       OLLAMA_BASE_URL: http://ollama:11434
-      HOST: 0.0.0.0
-      PORT: 3080
     volumes:
-      - ./librechat.yaml:/app/librechat.yaml:ro
-      - .podman/librechat-images:/app/client/public/images
-      - .podman/librechat-logs:/app/api/logs
-    depends_on:
-      mongo:
-        condition: service_healthy
-      ollama:
-        condition: service_healthy
+      - .podman/open-webui-appbackenddata:/app/backend/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3080/api/health"]
-      interval: 30s
-      timeout: 10s
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 60s
+      timeout: 30s
       retries: 3
-
-
+    depends_on:
+      - postgres
+      - ollama
 
   postgres:
     image: pgvector/pgvector:pg16
@@ -76,11 +48,13 @@ services:
       POSTGRES_DB: postgres
       N8N_DB_PASSWORD: ${N8N_DB_PASSWORD}
       SIM_DB_PASSWORD: ${SIM_DB_PASSWORD}
+      OPEN_WEBUI_DB_PASSWORD: ${OPEN_WEBUI_DB_PASSWORD}
     ports:
       - "127.0.0.1:5432:5432"
     volumes:
       - .podman/pgvector-varlibpostgresqldata:/var/lib/postgresql/data
       - ./initdb:/docker-entrypoint-initdb.d
+
 
   n8n:
     image: n8nio/n8n:latest
@@ -130,3 +104,18 @@ services:
       - .podman/realtime-appdata:/app/data
     depends_on:
       - postgres
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      - open-webui
+      - n8n
+      - sim

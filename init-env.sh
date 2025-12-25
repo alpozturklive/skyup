@@ -1,32 +1,34 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+echo "Recreating .podman directories..."
+rm -rf .podman
+mkdir -p .podman/open-webui-appbackenddata
+mkdir -p .podman/pgvector-varlibpostgresqldata
+mkdir -p .podman/n8n-homenode.n8n
+mkdir -p .podman/sim-appdata
+mkdir -p .podman/realtime-appdata
+mkdir -p initdb
+echo "✔ .podman directories created"
+
 gen_pass() {
   openssl rand -base64 128 | tr -d "=+/" | head -c 32
 }
-
-mkdir -p initdb
 
 # Generate passwords once
 POSTGRES_PASSWORD=$(gen_pass)
 N8N_DB_PASSWORD=$(gen_pass)
 SIM_DB_PASSWORD=$(gen_pass)
+OPEN_WEBUI_DB_PASSWORD=$(gen_pass)
 
 # -------------------------
 # Generate .env
 # -------------------------
 cat > .env <<EOF
-# LibreChat
-JWT_SECRET=$(gen_pass)
-JWT_REFRESH_SECRET=$(gen_pass)
-SESSION_SECRET=$(gen_pass)
-CREDS_KEY=$(openssl rand -hex 32)
-CREDS_IV=$(openssl rand -hex 16)
-LIBRECHAT_ADMIN_EMAIL=admin@skyup.online
-LIBRECHAT_ADMIN_PASSWORD=$(gen_pass)
-ALLOW_REGISTRATION=false
-ALLOW_SOCIAL_LOGIN=false
-ALLOW_EMAIL_LOGIN=true
+# Open WebUI
+OPEN_WEBUI_DB=open_webui
+OPEN_WEBUI_DB_USER=open_webui_user
+OPEN_WEBUI_DB_PASSWORD=${OPEN_WEBUI_DB_PASSWORD}
 
 # PostgreSQL
 POSTGRES_USER=postgres
