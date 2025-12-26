@@ -1,25 +1,35 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "Recreating .podman directories..."
-rm -rf .podman
+echo "Resetting .podman directories (preserving open-webui)..."
+rm -rf .podman/pgvector-varlibpostgresqldata
+rm -rf .podman/n8n-homenode.n8n
+rm -rf .podman/sim-appdata
+rm -rf .podman/realtime-appdata
+
 mkdir -p .podman/open-webui-appbackenddata
 mkdir -p .podman/pgvector-varlibpostgresqldata
 mkdir -p .podman/n8n-homenode.n8n
 mkdir -p .podman/sim-appdata
 mkdir -p .podman/realtime-appdata
 mkdir -p initdb
-echo "✔ .podman directories created"
+echo "✔ .podman directories reset"
 
 gen_pass() {
   openssl rand -base64 128 | tr -d "=+/" | head -c 32
 }
 
-# Generate passwords once
-POSTGRES_PASSWORD=$(gen_pass)
-N8N_DB_PASSWORD=$(gen_pass)
-SIM_DB_PASSWORD=$(gen_pass)
-OPEN_WEBUI_DB_PASSWORD=$(gen_pass)
+# Load existing .env variables if the file exists
+if [ -f .env ]; then
+  source .env
+fi
+
+# Generate passwords if not already set
+: "${POSTGRES_PASSWORD:=$(gen_pass)}"
+: "${N8N_DB_PASSWORD:=$(gen_pass)}"
+: "${SIM_DB_PASSWORD:=$(gen_pass)}"
+: "${OPEN_WEBUI_DB_PASSWORD:=$(gen_pass)}"
+: "${N8N_BASIC_PASSWORD:=$(gen_pass)}" # Also ensure n8n basic auth password is handled
 
 # -------------------------
 # Generate .env
@@ -40,7 +50,7 @@ N8N_DB=n8n
 N8N_DB_USER=n8n_user
 N8N_DB_PASSWORD=${N8N_DB_PASSWORD}
 N8N_BASIC_USER=admin
-N8N_BASIC_PASSWORD=$(gen_pass)
+N8N_BASIC_PASSWORD=${N8N_BASIC_PASSWORD}
 
 # sim
 SIM_DB=sim
