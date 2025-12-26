@@ -59,26 +59,27 @@ chmod +x init-env.sh
 ```
 
 This script performs two key functions:
-- **Creates required directories:** It removes any existing `.podman` directory and recreates the entire structure needed by the services.
-- **Generates secrets:** It creates strong passwords and credentials, storing them securely in the `.env` file.
+- **Creates/Resets directories:** It creates the required `.podman` data structure. On subsequent runs, it will reset the data for all services *except* Open WebUI, whose data is preserved to maintain users and settings.
+- **Generates/Updates secrets:** It creates strong passwords and credentials, storing them securely in the `.env` file. If `.env` already exists, it will reuse any existing passwords to avoid breaking current configurations.
 
 ---
 
 ### 2️⃣ PostgreSQL initialization
-
-PostgreSQL uses the image:
-
-```yaml
-pgvector/pgvector:pg16
-```
-
-On first startup, the SQL script inside `initdb/` is executed automatically:
-
-- **01-create-extra-dbs.sh**: Creates databases and users for `n8n`, `sim`, and `open-webui`, and enables necessary extensions (`vector`, `uuid-ossp`) for each.
-
 ---
 
-### 3️⃣ Start services
+##  troubleshooting
+
+### n8n Crash Loop (Permission Denied)
+
+If the `n8n` service enters a crash loop immediately after starting, it is likely due to a file permission error on its data volume. The container runs as a non-root user and may not have permission to write to the `.podman/n8n-homenode.n8n` directory.
+
+To fix this, change the ownership of the directory on the host to the correct user ID (typically `1000` for the `node` user):
+
+```bash
+sudo chown -R 1000:1000 .podman/n8n-homenode.n8n
+```
+
+After changing the ownership, restart the services:
 
 ```bash
 podman-compose up -d

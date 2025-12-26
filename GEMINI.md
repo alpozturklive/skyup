@@ -28,6 +28,7 @@ The key files in this repository are:
 
 - put all service data this format:  .podman/contianer_name/directories... 
 - put all password etc in `.env` (genreated by `init-env.sh` )
+- If the `n8n` service fails to start (crash loop), it is likely due to a file permission error on its data volume. The container runs as a non-root user and may not have permission to write to the `.podman/n8n-homenode.n8n` directory. To fix this, change the ownership of the directory on the host to UID 1000: `chown -R 1000:1000 .podman/n8n-homenode.n8n`
 
 ## Setup and Operation
 
