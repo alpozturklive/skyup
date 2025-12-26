@@ -5,9 +5,9 @@ mkdir -p screenshots
 
 # URLs to screenshot
 declare -A urls=(
-    ["open-webui"]="https://skyup.online"
-    ["n8n"]="https://n8n.skyup.online"
-    ["simstudio"]="https://sim.skyup.online"
+    ["open-webui"]="http://127.0.0.1:8080"
+    ["n8n"]="http://127.0.0.1:5678"
+    ["simstudio"]="http://127.0.0.1:3001"
 )
 
 # Check if shot-scraper is installed
