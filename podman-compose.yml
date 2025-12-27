@@ -61,7 +61,7 @@ services:
     container_name: n8n
     restart: unless-stopped
     ports:
-      - "127.0.0.1:5678:5678"
+      - "5678:5678"
     env_file:
       - .env
     environment:
@@ -78,33 +78,6 @@ services:
     depends_on:
       - postgres
 
-  sim:
-    image: ghcr.io/simstudioai/simstudio:latest
-    container_name: sim
-    restart: unless-stopped
-    env_file:
-      - .env
-    environment:
-      DATABASE_URL: postgresql://${SIM_DB_USER}:${SIM_DB_PASSWORD}@postgres:5432/${SIM_DB}
-    volumes:
-      - .podman/sim-appdata:/app/data
-    depends_on:
-      - postgres
-  realtime:
-    image: ghcr.io/simstudioai/realtime:latest
-    container_name: realtime
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:3001:3000"
-    env_file:
-      - .env
-    environment:
-      DATABASE_URL: postgresql://${SIM_DB_USER}:${SIM_DB_PASSWORD}@postgres:5432/${SIM_DB}
-    volumes:
-      - .podman/realtime-appdata:/app/data
-    depends_on:
-      - postgres
-
   nginx:
     image: nginx:latest
     container_name: nginx
@@ -118,4 +91,3 @@ services:
     depends_on:
       - open-webui
       - n8n
-      - sim

@@ -4,14 +4,10 @@ set -euo pipefail
 echo "Resetting .podman directories (preserving open-webui)..."
 rm -rf .podman/pgvector-varlibpostgresqldata
 rm -rf .podman/n8n-homenode.n8n
-rm -rf .podman/sim-appdata
-rm -rf .podman/realtime-appdata
 
 mkdir -p .podman/open-webui-appbackenddata
 mkdir -p .podman/pgvector-varlibpostgresqldata
 mkdir -p .podman/n8n-homenode.n8n
-mkdir -p .podman/sim-appdata
-mkdir -p .podman/realtime-appdata
 mkdir -p initdb
 echo "✔ .podman directories reset"
 
@@ -27,7 +23,6 @@ fi
 # Generate passwords if not already set
 : "${POSTGRES_PASSWORD:=$(gen_pass)}"
 : "${N8N_DB_PASSWORD:=$(gen_pass)}"
-: "${SIM_DB_PASSWORD:=$(gen_pass)}"
 : "${OPEN_WEBUI_DB_PASSWORD:=$(gen_pass)}"
 : "${N8N_BASIC_PASSWORD:=$(gen_pass)}" # Also ensure n8n basic auth password is handled
 
@@ -51,12 +46,6 @@ N8N_DB_USER=n8n_user
 N8N_DB_PASSWORD=${N8N_DB_PASSWORD}
 N8N_BASIC_USER=admin
 N8N_BASIC_PASSWORD=${N8N_BASIC_PASSWORD}
-
-# sim
-SIM_DB=sim
-SIM_DB_USER=sim_user
-SIM_DB_PASSWORD=${SIM_DB_PASSWORD}
-NEXT_PUBLIC_APP_URL=https://sim.skyup.online
 EOF
 
 chmod 600 .env
