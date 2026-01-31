@@ -9,9 +9,9 @@ SkyUp is a self-hosted application stack for running AI applications and workflo
 ### Included Services
 
 - **PostgreSQL (pgvector):** Vector-enabled database.
+- **Ollama:** Local LLM service.
 - **Open WebUI:** A user-friendly web interface for LLMs.
 - **n8n:** Workflow automation.
-- **SimStudio AI:** AI agent workflows.
 - **Nginx:** Reverse proxy with HTTPS.
 
 ## Repository Structure

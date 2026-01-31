@@ -13,15 +13,15 @@ It is designed to be **simple, host‑only accessible**, and easy to extend late
 | Service               | Purpose                 | Default Port   |
 | --------------------- | ----------------------- | -------------- |
 | **PostgreSQL**        | Vector-enabled database | `5432`         |
+| **Ollama**            | Local LLM service       | `11434`        |
 | **Open WebUI**        | AI chat interface       | `8080`         |
 | **n8n**               | Workflow automation     | `5678`         |
-| **SimStudio AI**      | AI agent workflows      | `3000` / `3001` |
 | **Nginx**             | Reverse proxy + HTTPS   | `80` / `443`    |
 
 -   **PostgreSQL (pgvector):** A powerful, open-source object-relational database system with vector similarity search capabilities.
+-   **Ollama:** A service for running large language models locally.
 -   **Open WebUI:** A user-friendly and feature-rich web interface for interacting with local Large Language Models (LLMs).
 -   **n8n:** A workflow automation tool that allows you to connect different applications and services to create powerful, automated workflows.
--   **SimStudio AI:** An environment for building, evaluating, and deploying AI agents and workflows.
 -   **Nginx:** A high-performance reverse proxy to route traffic to the appropriate services, with HTTPS support for production deployments.
 
 ---
@@ -76,8 +76,8 @@ The services are configured to be accessible only from the host machine (`127.0.
 | Service      | Local URL                  |
 |--------------|----------------------------|
 | Open WebUI   | `http://127.0.0.1:8080`    |
+| Ollama       | `http://127.0.0.1:11434`   |
 | n8n          | `http://127.0.0.1:5678`    |
-| SimStudio AI | `http://127.0.0.1:3001`    |
 
 ---
 
