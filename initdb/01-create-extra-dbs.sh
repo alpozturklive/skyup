@@ -7,6 +7,9 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
 
     CREATE USER open_webui_user WITH ENCRYPTED PASSWORD '${OPEN_WEBUI_DB_PASSWORD}';
     CREATE DATABASE open_webui OWNER open_webui_user;
+
+    CREATE USER memory_user WITH ENCRYPTED PASSWORD '${MEMORY_DB_PASSWORD}';
+    CREATE DATABASE memory OWNER memory_user;
 EOSQL
 
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "open_webui" <<-EOSQL

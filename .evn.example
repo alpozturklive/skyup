@@ -15,8 +15,7 @@ N8N_DB_PASSWORD=e3QXiYLnsyp1f9eUD2WFDIbG4biNhp2W
 N8N_BASIC_USER=admin
 N8N_BASIC_PASSWORD=zSNarlceBKwss0PW3QoT6DwBKtCYg4w5
 
-# sim
-SIM_DB=sim
-SIM_DB_USER=sim_user
-SIM_DB_PASSWORD=evICZciYiGMGuYX94y9xSkyVS3CDTvwS
-NEXT_PUBLIC_APP_URL=https://sim.skyup.online
+# Memory database for n8n workflows
+MEMORY_DB=memory
+MEMORY_DB_USER=memory_user
+MEMORY_DB_PASSWORD=examplePasswordChangeThis123456

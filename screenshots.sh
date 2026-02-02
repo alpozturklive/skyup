@@ -7,7 +7,6 @@ mkdir -p screenshots
 declare -A urls=(
     ["open-webui"]="http://127.0.0.1:8080"
     ["n8n"]="http://127.0.0.1:5678"
-    ["simstudio"]="http://127.0.0.1:3001"
 )
 
 # Check if shot-scraper is installed

@@ -24,7 +24,8 @@ fi
 : "${POSTGRES_PASSWORD:=$(gen_pass)}"
 : "${N8N_DB_PASSWORD:=$(gen_pass)}"
 : "${OPEN_WEBUI_DB_PASSWORD:=$(gen_pass)}"
-: "${N8N_BASIC_PASSWORD:=$(gen_pass)}" # Also ensure n8n basic auth password is handled
+: "${N8N_BASIC_PASSWORD:=$(gen_pass)}"
+: "${MEMORY_DB_PASSWORD:=$(gen_pass)}"
 
 # -------------------------
 # Generate .env
@@ -46,6 +47,11 @@ N8N_DB_USER=n8n_user
 N8N_DB_PASSWORD=${N8N_DB_PASSWORD}
 N8N_BASIC_USER=admin
 N8N_BASIC_PASSWORD=${N8N_BASIC_PASSWORD}
+
+# Memory database for n8n workflows
+MEMORY_DB=memory
+MEMORY_DB_USER=memory_user
+MEMORY_DB_PASSWORD=${MEMORY_DB_PASSWORD}
 EOF
 
 chmod 600 .env
