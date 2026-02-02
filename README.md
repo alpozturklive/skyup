@@ -126,7 +126,7 @@ psql -h 127.0.0.1 -p 5432 -U postgres postgres
 
 ```bash
 psql -h 127.0.0.1 -U n8n_user n8n
-psql -h 127.0.0.1 -U sim_user sim
+
 psql -h 127.0.0.1 -U open_webui_user open_webui
 ```
 
