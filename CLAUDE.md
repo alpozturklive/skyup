@@ -141,6 +141,14 @@ podman-compose up -d
 
 Ensure you're using the correct service name in container-to-container communication. From within containers, use `postgres` as the hostname, not `127.0.0.1` or `localhost`.
 
+### 502 Bad Gateway from Nginx
+
+If you get a 502 error, restart Nginx to clear its DNS cache: `podman-compose restart nginx`
+
+### DB Connection Issues
+
+If you change `.env` passwords, update the DB users directly in `postgres` with `ALTER USER`.
+
 ## Important Configuration Details
 
 ### Ollama GPU Support

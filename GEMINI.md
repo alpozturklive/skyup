@@ -50,6 +50,8 @@ The key files in this repository are:
 ### Common Issues
 - **n8n crash loop**: Due to file permission errors. The container runs as UID 1000. Fix: `sudo chown -R 1000:1000 .podman/n8n-homenode.n8n`
 - **Container communication**: Use service names (e.g., `postgres`, `ollama`) not `localhost` or `127.0.0.1`
+- **502 Bad Gateway from Nginx**: If you get a 502 error, restart Nginx to clear its DNS cache: `podman-compose restart nginx`
+- **DB Connection Issues**: If you change `.env` passwords, update the DB users directly in `postgres` with `ALTER USER`.
 
 ## Setup and Operation
 

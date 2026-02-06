@@ -183,6 +183,24 @@ If you can't connect to PostgreSQL:
 
 3. Ensure you're using `127.0.0.1` when connecting from the host, and the service name `postgres` when connecting from other containers.
 
+### 502 Bad Gateway Error from Nginx
+
+If you receive a 502 Bad Gateway error when accessing services through Nginx, it might be due to stale DNS entries in the Nginx container. This can happen if the upstream service containers (like `n8n` or `open-webui`) are recreated and get new IP addresses.
+
+To fix this, simply restart the Nginx container:
+
+```bash
+podman-compose restart nginx
+```
+
+This will force Nginx to re-resolve the hostnames of the upstream services.
+
+### Application Can't Connect to Database
+
+If an application (like n8n or Open WebUI) can't connect to the PostgreSQL database, and you have recently changed the passwords in the `.env` file, the passwords in the database will be out of sync.
+
+To fix this, you need to update the user passwords within the PostgreSQL database to match your `.env` file. You can do this by executing `ALTER USER` commands inside the `postgres` container.
+
 ### Service Won't Start After System Reboot
 
 Podman containers don't auto-start by default. After a system reboot:
