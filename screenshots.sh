@@ -1,29 +1,35 @@
 #!/bin/bash
+#
+# SkyUp Screenshot Tool (wrapper)
+#
+# Installs dependencies if needed and runs the Python screenshot tool.
+# For direct usage: python3 screenshots.py [options]
+#
 
-# Create screenshots directory
-mkdir -p screenshots
+set -e
 
-# URLs to screenshot
-declare -A urls=(
-    ["open-webui"]="http://127.0.0.1:8080"
-    ["n8n"]="http://127.0.0.1:5678"
-)
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-# Check if shot-scraper is installed
-if ! command -v shot-scraper &> /dev/null; then
-    echo "Installing shot-scraper..."
-    pip install shot-scraper
+# Check Python 3
+if ! command -v python3 &> /dev/null; then
+    echo "Error: python3 is required but not installed."
+    exit 1
 fi
 
-# Take screenshots
-for name in "${!urls[@]}"; do
-    echo "📸 Taking screenshot of $name (${urls[$name]})..."
-    shot-scraper "${urls[$name]}" \
-        -o "screenshots/${name}.png" \
-        --width 1920 \
-        --height 1080 \
-        --wait 2000
-    echo "✅ Saved: screenshots/${name}.png"
-done
+# Install Playwright if missing
+if ! python3 -c "import playwright" 2>/dev/null; then
+    echo "Installing Playwright..."
+    python3 -m ensurepip 2>/dev/null || true
+    python3 -m pip install playwright
+    python3 -m playwright install chromium
 
-echo "🎉 All screenshots saved to screenshots/ directory"
+    # Install system dependencies (RHEL/Fedora)
+    if command -v dnf &> /dev/null; then
+        echo "Installing system dependencies..."
+        sudo dnf install -y nspr nss nss-util atk at-spi2-atk cups-libs \
+            libdrm libXcomposite libXdamage libXrandr mesa-libgbm pango \
+            alsa-lib libxkbcommon 2>/dev/null || true
+    fi
+fi
+
+exec python3 "$SCRIPT_DIR/screenshots.py" "$@"

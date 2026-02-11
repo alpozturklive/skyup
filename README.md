@@ -6,6 +6,10 @@ This repository provides a complete self‑hosted stack for running AI applicati
 
 It is designed to be **simple, host‑only accessible**, and easy to extend later with security hardening if required.
 
+| Open WebUI | n8n |
+|:---:|:---:|
+| ![Open WebUI](screenshots/open-webui.png) | ![n8n](screenshots/n8n.png) |
+
 **What's New in v2.2:**
 - Removed bundled browserless container in favor of env-based configuration
 - Added `BROWSERLESS_TOKEN` and `BROWSERLESS_URL` environment variables for external browserless access
@@ -131,14 +135,27 @@ Models are stored in `/root/.ollama` on the host machine.
 
 ## 📸 Generating Screenshots
 
-The `screenshots.sh` script can be used to generate screenshots of the web interfaces. This is useful for documentation or sharing your setup.
+The screenshot tool uses Python with [Playwright](https://playwright.dev/python/) to capture headless browser screenshots of the web interfaces. This is useful for documentation or sharing your setup.
 
 ```bash
+# Quick start (installs dependencies automatically)
 chmod +x screenshots.sh
 ./screenshots.sh
+
+# Or run the Python script directly
+python3 screenshots.py
+
+# Screenshot a specific service
+python3 screenshots.py open-webui
+python3 screenshots.py n8n
+
+# List available targets
+python3 screenshots.py --list
 ```
 
 The screenshots will be saved in the `screenshots/` directory.
+
+**Requirements:** Python 3 and Playwright. The `screenshots.sh` wrapper will install dependencies automatically on first run.
 
 ---
 
