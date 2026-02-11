@@ -61,7 +61,7 @@ services:
     container_name: n8n
     restart: unless-stopped
     ports:
-      - "5678:5678"
+      - "127.0.0.1:5678:5678"
     env_file:
       - .env
     environment:
@@ -73,28 +73,11 @@ services:
       N8N_BASIC_AUTH_ACTIVE: "true"
       N8N_BASIC_AUTH_USER: ${N8N_BASIC_USER}
       N8N_BASIC_AUTH_PASSWORD: ${N8N_BASIC_PASSWORD}
-      NODE_FUNCTION_ALLOW_EXTERNAL: puppeteer-core
-
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: false
     volumes:
       - .podman/n8n-homenode.n8n:/home/node/.n8n
-    links:
-      - browserless
     depends_on:
       - postgres
-      - browserless
-
-  browserless:
-    image: browserless/chrome:latest
-    hostname: browserless
-    container_name: browserless
-    ports:
-      - "3000:3000"
-    environment:
-      - TOKEN=SOLO_BOT_TOKEN
-      - MAX_CONCURRENT_SESSIONS=5
-      - CONNECTION_TIMEOUT=60000
-      - MAX_QUEUE_LENGTH=10
-    restart: unless-stopped
 
   nginx:
     image: nginx:latest
