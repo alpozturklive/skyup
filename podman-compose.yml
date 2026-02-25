@@ -74,6 +74,9 @@ services:
       N8N_BASIC_AUTH_USER: ${N8N_BASIC_USER}
       N8N_BASIC_AUTH_PASSWORD: ${N8N_BASIC_PASSWORD}
       N8N_BLOCK_ENV_ACCESS_IN_NODE: false
+      WEBHOOK_URL: https://n8n.skyup.online
+      N8N_HOST: n8n.skyup.online
+      N8N_PROTOCOL: https
     volumes:
       - .podman/n8n-homenode.n8n:/home/node/.n8n
     depends_on:

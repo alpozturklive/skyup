@@ -26,7 +26,6 @@ fi
 : "${OPEN_WEBUI_DB_PASSWORD:=$(gen_pass)}"
 : "${N8N_BASIC_PASSWORD:=$(gen_pass)}"
 : "${MEMORY_DB_PASSWORD:=$(gen_pass)}"
-: "${BROWSERLESS_TOKEN:=$(gen_pass)}"
 
 # -------------------------
 # Generate .env
@@ -53,10 +52,6 @@ N8N_BASIC_PASSWORD=${N8N_BASIC_PASSWORD}
 MEMORY_DB=memory
 MEMORY_DB_USER=memory_user
 MEMORY_DB_PASSWORD=${MEMORY_DB_PASSWORD}
-
-# Browserless
-BROWSERLESS_TOKEN=${BROWSERLESS_TOKEN}
-BROWSERLESS_URL=http://browserless:3000
 EOF
 
 chmod 600 .env

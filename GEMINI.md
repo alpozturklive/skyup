@@ -47,12 +47,15 @@ The key files in this repository are:
   - OPEN_WEBUI_DB_PASSWORD
   - MEMORY_DB_PASSWORD
   - N8N_BASIC_USER / N8N_BASIC_PASSWORD
-  - BROWSERLESS_TOKEN / BROWSERLESS_URL
 
 ### n8n Configuration
-- n8n uses `N8N_BLOCK_ENV_ACCESS_IN_NODE: false` to allow Code nodes to access environment variables
-- Browserless is configured via env vars (`BROWSERLESS_TOKEN`, `BROWSERLESS_URL`), not as a bundled container
+- n8n uses `N8N_BLOCK_ENV_ACCESS_IN_NODE: false` to allow Code nodes to read environment variables from within workflows
 - n8n binds to `127.0.0.1:5678` for host-only access with basic auth protection
+- The `podman-compose.yml` has n8n domain settings **hardcoded to `skyup.online`**:
+  - `WEBHOOK_URL: https://n8n.skyup.online`
+  - `N8N_HOST: n8n.skyup.online`
+  - `N8N_PROTOCOL: https`
+  - These must be updated for custom domain deployments
 
 ### Common Issues
 - **n8n crash loop**: Due to file permission errors. The container runs as UID 1000. Fix: `sudo chown -R 1000:1000 .podman/n8n-homenode.n8n`
@@ -66,7 +69,7 @@ The key files in this repository are:
 
 2. **Initialization:**
    - Run `chmod +x init-env.sh && ./init-env.sh` to generate the `.env` file with strong random passwords and create required data directories.
-   - **WARNING**: Re-running init-env.sh will reset PostgreSQL and n8n data directories!
+   - **WARNING**: Running (or re-running) `init-env.sh` **deletes** `.podman/pgvector-varlibpostgresqldata` and `.podman/n8n-homenode.n8n`. Open WebUI data is preserved. Back up existing data before re-running.
 
 3. **Start Services:** Use `podman-compose up -d` to start the application stack.
 
